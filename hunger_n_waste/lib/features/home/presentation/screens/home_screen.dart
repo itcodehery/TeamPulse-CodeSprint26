@@ -135,7 +135,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       appBar: AppBar(
         title: Text(
           'Explore',
-          style: GoogleFonts.poppins(
+          style: GoogleFonts.outfit(
             fontWeight: FontWeight.w600,
             fontSize: 24,
             color: Colors.black87,
@@ -376,7 +376,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                         const SizedBox(height: 16),
                                         Text(
                                           'No organizations found',
-                                          style: GoogleFonts.poppins(
+                                          style: GoogleFonts.outfit(
                                             fontSize: 16,
                                             color: Colors.grey[600],
                                           ),

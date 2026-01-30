@@ -88,21 +88,19 @@ class FoodRequestRepository {
         });
   }
 
-  // Stream for available orders (pending pickup) for riders
+  // Stream for available orders (active status - donor accepted) for riders
   Stream<List<FoodRequest>> watchAvailableOrders() {
-    print(
-      '🔵 [WATCH AVAILABLE ORDERS] Setting up stream for pending_pickup orders',
-    );
+    print('🔵 [WATCH AVAILABLE ORDERS] Setting up stream for active orders');
     return _client
         .from('food_requests')
         .stream(primaryKey: ['id'])
-        .eq('status', 'pending_pickup')
+        .eq('status', 'active')
         .order('created_at', ascending: false)
         .map((data) {
           print('🟢 [WATCH AVAILABLE ORDERS] Received ${data.length} orders');
           return data
               .map((json) => FoodRequest.fromJson(json))
-              .where((req) => req.status == FoodRequestStatus.pendingPickup)
+              .where((req) => req.status == FoodRequestStatus.active)
               .toList();
         });
   }
@@ -253,7 +251,7 @@ class FoodRequestRepository {
         .from('food_requests')
         .update({
           'rider_id': riderId,
-          'status': 'in_transit', // Setting directly to in_transit as requested
+          'status': 'pending_pickup', // Rider accepted, waiting for food pickup
         })
         .eq('id', requestId);
     print('🟢 [ASSIGN RIDER] Assignment successful');

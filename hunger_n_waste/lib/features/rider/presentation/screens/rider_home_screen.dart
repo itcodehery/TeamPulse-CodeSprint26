@@ -500,8 +500,8 @@ class _JobCard extends ConsumerWidget {
                 width: double.infinity,
                 child: FilledButton.icon(
                   onPressed: () => _updateStatus(context, ref, 'in_transit'),
-                  icon: const Icon(Icons.check),
-                  label: const Text('CONFIRM PICKUP'),
+                  icon: const Icon(Icons.local_shipping),
+                  label: const Text('RECEIVED FOOD CARGO'),
                   style: FilledButton.styleFrom(backgroundColor: Colors.orange),
                 ),
               ),

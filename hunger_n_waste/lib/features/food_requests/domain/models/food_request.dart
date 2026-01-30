@@ -1,6 +1,13 @@
 import '../../../auth/domain/models/organization_profile.dart';
 
-enum FoodRequestStatus { open, pendingPickup, inTransit, completed, cancelled }
+enum FoodRequestStatus {
+  open,
+  active,
+  pendingPickup,
+  inTransit,
+  completed,
+  cancelled,
+}
 
 class FoodRequest {
   final String id;
@@ -109,6 +116,8 @@ class FoodRequest {
     switch (status) {
       case FoodRequestStatus.open:
         return 'Open';
+      case FoodRequestStatus.active:
+        return 'Active';
       case FoodRequestStatus.pendingPickup:
         return 'Pending Pickup';
       case FoodRequestStatus.inTransit:

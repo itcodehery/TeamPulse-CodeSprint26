@@ -148,6 +148,8 @@ class DonorContributionsScreen extends ConsumerWidget {
         return Colors.orange;
       case FoodRequestStatus.open:
         return Colors.grey;
+      case FoodRequestStatus.active:
+        return Colors.teal;
       case FoodRequestStatus.cancelled:
         return Colors.red;
     }
