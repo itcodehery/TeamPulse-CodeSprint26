@@ -89,7 +89,10 @@ class _OrganizationRegistrationScreenState
           licenseNumber: _licenseController.text.trim(),
         );
 
-        await orgRepo.createProfile(profile);
+        await orgRepo.createProfile(
+          orgProfile: profile,
+          email: _emailController.text.trim(),
+        );
 
         if (mounted) {
           // Navigate to Organization Home

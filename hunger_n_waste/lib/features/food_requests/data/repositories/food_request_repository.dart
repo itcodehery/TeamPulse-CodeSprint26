@@ -25,8 +25,8 @@ class FoodRequestRepository {
           'food_type': foodType,
           'quantity': quantity,
           'status': 'open',
-          'location':
-              'POINT($longitude $latitude)', // PostGIS format if using geography, or separate lat/long columns. Plan mentioned geography.
+          'latitude': latitude,
+          'longitude': longitude,
         })
         .select()
         .single();

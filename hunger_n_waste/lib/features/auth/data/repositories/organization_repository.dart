@@ -11,8 +11,20 @@ class OrganizationRepository {
 
   OrganizationRepository(this._client);
 
-  Future<void> createProfile(OrganizationProfile profile) async {
-    await _client.from('organization_profiles').insert(profile.toJson());
+  Future<void> createProfile({
+    required OrganizationProfile orgProfile,
+    required String email,
+  }) async {
+    // 1. Create Profile
+    await _client.from('profiles').insert({
+      'id': orgProfile.id,
+      'email': email,
+      'name': orgProfile.organizationName,
+      'user_type': 'organization',
+    });
+
+    // 2. Create Organization Profile
+    await _client.from('organization_profiles').insert(orgProfile.toJson());
   }
 
   Future<OrganizationProfile?> getProfile(String id) async {

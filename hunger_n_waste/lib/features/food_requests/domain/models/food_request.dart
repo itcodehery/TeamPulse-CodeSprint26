@@ -14,6 +14,8 @@ class FoodRequest {
   final DateTime updatedAt;
   final OrganizationProfile? organization; // Joined data
   // We might store location here or fetch from Org, assuming stored for now or handled via join
+  final double latitude;
+  final double longitude;
 
   const FoodRequest({
     required this.id,
@@ -26,6 +28,8 @@ class FoodRequest {
     required this.createdAt,
     required this.updatedAt,
     this.organization,
+    required this.latitude,
+    required this.longitude,
   });
 
   factory FoodRequest.fromJson(Map<String, dynamic> json) {
@@ -45,6 +49,8 @@ class FoodRequest {
       organization: json['organization_profiles'] != null
           ? OrganizationProfile.fromJson(json['organization_profiles'])
           : null,
+      latitude: (json['latitude'] as num).toDouble(),
+      longitude: (json['longitude'] as num).toDouble(),
     );
   }
 
@@ -59,6 +65,8 @@ class FoodRequest {
       'rider_id': riderId,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
+      'latitude': latitude,
+      'longitude': longitude,
     };
   }
 
