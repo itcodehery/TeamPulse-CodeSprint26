@@ -90,6 +90,8 @@ class _OrganizationHomeScreenState
     switch (status) {
       case FoodRequestStatus.open:
         return const Icon(Icons.check_circle_outline, color: Colors.green);
+      case FoodRequestStatus.active:
+        return const Icon(Icons.local_dining, color: Colors.teal);
       case FoodRequestStatus.pendingPickup:
         return const Icon(Icons.access_time, color: Colors.orange);
       case FoodRequestStatus.inTransit:
