@@ -423,27 +423,24 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // 1. Drag Handle
-              Center(
-                child: Container(
-                  margin: const EdgeInsets.only(top: 12, bottom: 24),
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.grey[300],
-                    borderRadius: BorderRadius.circular(2),
-                  ),
+              Container(
+                margin: const EdgeInsets.symmetric(vertical: 16),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey[200],
+                  borderRadius: BorderRadius.circular(2),
                 ),
               ),
 
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
+                padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // 2. Organization Header (More personal)
+                    // 2. Header: Org Info
                     Row(
                       children: [
                         Container(
@@ -451,18 +448,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             border: Border.all(
-                              color: Theme.of(
-                                context,
-                              ).primaryColor.withOpacity(0.2),
+                              color: Colors.grey[100]!,
                               width: 2,
                             ),
                           ),
                           child: CircleAvatar(
-                            radius: 24,
-                            backgroundColor: Colors.white,
+                            radius: 26,
+                            backgroundColor: Colors.grey[50],
                             child: Icon(
-                              Icons.volunteer_activism,
+                              Icons.volunteer_activism_rounded,
                               color: Theme.of(context).primaryColor,
+                              size: 28,
                             ),
                           ),
                         ),
@@ -474,134 +470,185 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               Text(
                                 req.organization?.organizationName ??
                                     'Community Organization',
-                                style: Theme.of(context).textTheme.titleMedium
-                                    ?.copyWith(
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.black87,
-                                    ),
+                                style: GoogleFonts.outfit(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black87,
+                                ),
                               ),
-                              Text(
-                                'Verified Partner',
-                                style: Theme.of(context).textTheme.bodySmall
-                                    ?.copyWith(
-                                      color: Colors.green[700],
+                              const SizedBox(height: 2),
+                              Row(
+                                children: [
+                                  Icon(
+                                    Icons.verified_rounded,
+                                    size: 14,
+                                    color: Theme.of(context).primaryColor,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'Verified Partner',
+                                    style: GoogleFonts.outfit(
+                                      fontSize: 13,
+                                      color: Colors.grey[600],
                                       fontWeight: FontWeight.w500,
                                     ),
+                                  ),
+                                ],
                               ),
                             ],
                           ),
                         ),
+                        // Status Badge (Quantity)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Theme.of(
+                              context,
+                            ).primaryColor.withOpacity(0.08),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            '${req.quantity} Servings',
+                            style: GoogleFonts.outfit(
+                              fontWeight: FontWeight.w600,
+                              color: Theme.of(context).primaryColor,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ),
                       ],
+                    ),
+                    const SizedBox(height: 32),
+
+                    // 3. The Request Narrative
+                    Text(
+                      'Requesting help with'.toUpperCase(),
+                      style: GoogleFonts.outfit(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.grey[500],
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Text.rich(
+                      TextSpan(
+                        children: [
+                          const TextSpan(text: "We are currently looking for "),
+                          TextSpan(
+                            text: req.foodType,
+                            style: TextStyle(
+                              color: Colors.black87,
+                              fontWeight: FontWeight.w600,
+                              decoration: TextDecoration.underline,
+                              decorationColor: Theme.of(
+                                context,
+                              ).primaryColor.withOpacity(0.3),
+                            ),
+                          ),
+                          const TextSpan(text: " to help feed "),
+                          TextSpan(
+                            text: "${req.quantity} people",
+                            style: const TextStyle(
+                              color: Colors.black87,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const TextSpan(
+                            text: ". Your contribution makes a direct impact.",
+                          ),
+                        ],
+                      ),
+                      style: GoogleFonts.outfit(
+                        fontSize: 20,
+                        height: 1.4,
+                        color: Colors.grey[800],
+                        fontWeight: FontWeight.w300,
+                      ),
                     ),
                     const SizedBox(height: 24),
 
-                    // 3. Narrative Request Card (The "Note")
+                    // 4. Location Context
                     Container(
-                      padding: const EdgeInsets.all(24),
+                      padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFFDF7F2), // Warm paper-like color
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: const Color(0xFFF2E8DF)),
+                        color: Colors.grey[50],
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.grey[100]!),
                       ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                      child: Row(
                         children: [
                           Icon(
-                            Icons.format_quote_rounded,
-                            size: 32,
-                            color: Colors.orange[300],
+                            Icons.location_on_rounded,
+                            color: Colors.grey[400],
+                            size: 20,
                           ),
-                          const SizedBox(height: 8),
-                          Text.rich(
-                            TextSpan(
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const TextSpan(
-                                  text: "We are currently looking for ",
-                                ),
-                                TextSpan(
-                                  text: req.foodType,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.black87,
+                                Text(
+                                  'Pickup Location',
+                                  style: GoogleFonts.outfit(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.grey[500],
                                   ),
                                 ),
-                                const TextSpan(text: " to help feed "),
-                                TextSpan(
-                                  text: "${req.quantity} people",
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.black87,
-                                  ),
-                                ),
-                                const TextSpan(
-                                  text:
-                                      ". Your timely contribution would mean the world to us.",
-                                ),
-                              ],
-                            ),
-                            style: Theme.of(context).textTheme.bodyLarge
-                                ?.copyWith(
-                                  height: 1.6,
-                                  color: Colors.grey[800],
-                                  fontStyle: FontStyle.italic,
-                                ),
-                          ),
-                          const SizedBox(height: 20),
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.location_on_outlined,
-                                size: 16,
-                                color: Colors.grey[600],
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
+                                const SizedBox(height: 2),
+                                Text(
                                   req.organization?.address ??
                                       'Location details provided upon acceptance',
-                                  style: Theme.of(context).textTheme.bodySmall
-                                      ?.copyWith(color: Colors.grey[700]),
+                                  style: GoogleFonts.outfit(
+                                    fontSize: 14,
+                                    color: Colors.grey[800],
+                                  ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         ],
                       ),
                     ),
                     const SizedBox(height: 32),
 
-                    // 4. Action Button
+                    // 5. Action Button
                     SizedBox(
                       width: double.infinity,
-                      height: 56,
+                      height: 58,
                       child: FilledButton(
                         style: FilledButton.styleFrom(
-                          backgroundColor: Theme.of(context).primaryColor,
+                          backgroundColor:
+                              Colors.black, // High contrast, professional
+                          foregroundColor: Colors.white,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16),
                           ),
                           elevation: 0,
                         ),
                         onPressed: () => _showLocationPickerDialog(req),
-                        child: const Row(
+                        child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.favorite_border),
-                            SizedBox(width: 12),
+                            const Icon(Icons.favorite_rounded, size: 20),
+                            const SizedBox(width: 12),
                             Text(
                               'Accept & Support',
-                              style: TextStyle(
+                              style: GoogleFonts.outfit(
                                 fontSize: 16,
-                                fontWeight: FontWeight.bold,
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
                           ],
                         ),
                       ),
                     ),
-                    const SizedBox(height: 32),
                   ],
                 ),
               ),
