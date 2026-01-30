@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 import '../../../../core/widgets/location_picker_screen.dart';
+import '../../data/repositories/auth_repository.dart';
+import '../../data/repositories/donor_repository.dart';
+import '../../domain/models/donor_profile.dart';
+import 'package:go_router/go_router.dart';
 
 class DonorRegistrationScreen extends ConsumerStatefulWidget {
   const DonorRegistrationScreen({super.key});
@@ -15,12 +19,17 @@ class _DonorRegistrationScreenState
     extends ConsumerState<DonorRegistrationScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
   final _addressController = TextEditingController();
+  bool _isLoading = false;
   LatLng? _selectedLocation;
 
   @override
   void dispose() {
     _nameController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
     _addressController.dispose();
     super.dispose();
   }
@@ -36,7 +45,7 @@ class _DonorRegistrationScreenState
     }
   }
 
-  void _submit() {
+  Future<void> _submit() async {
     if (_formKey.currentState!.validate()) {
       if (_selectedLocation == null) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -44,10 +53,52 @@ class _DonorRegistrationScreenState
         );
         return;
       }
-      // TODO: Submit data to controller/repository
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Processing Donor Registration...')),
-      );
+
+      setState(() => _isLoading = true);
+
+      try {
+        final authRepo = ref.read(authRepositoryProvider);
+        final donorRepo = ref.read(donorRepositoryProvider);
+
+        // 1. Sign Up (Auth)
+        final userId = await authRepo.signUpWithEmail(
+          email: _emailController.text.trim(),
+          password: _passwordController.text.trim(),
+        );
+
+        if (userId == null) {
+          throw Exception('Registration failed: User ID is null');
+        }
+
+        // 2. Create Profile & Donor Profile (DB)
+        final donorProfile = DonorProfile(
+          id: userId,
+          defaultAddress: _addressController.text.trim(),
+          defaultLatitude: _selectedLocation!.latitude,
+          defaultLongitude: _selectedLocation!.longitude,
+        );
+
+        await donorRepo.createProfile(
+          donorProfile: donorProfile,
+          email: _emailController.text.trim(),
+          name: _nameController.text.trim(),
+        );
+
+        if (mounted) {
+          // Navigate to Home
+          context.go('/home');
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Error: $e')));
+        }
+      } finally {
+        if (mounted) {
+          setState(() => _isLoading = false);
+        }
+      }
     }
   }
 
@@ -71,6 +122,31 @@ class _DonorRegistrationScreenState
                 ),
                 validator: (value) => value == null || value.isEmpty
                     ? 'Please enter your name'
+                    : null,
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _emailController,
+                decoration: const InputDecoration(
+                  labelText: 'Email',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.email_outlined),
+                ),
+                validator: (value) => value == null || value.isEmpty
+                    ? 'Please enter your email'
+                    : null,
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _passwordController,
+                decoration: const InputDecoration(
+                  labelText: 'Password',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.lock_outline),
+                ),
+                obscureText: true,
+                validator: (value) => value == null || value.length < 6
+                    ? 'Password must be at least 6 characters'
                     : null,
               ),
               const SizedBox(height: 16),
@@ -117,11 +193,13 @@ class _DonorRegistrationScreenState
 
               const SizedBox(height: 32),
               FilledButton(
-                onPressed: _submit,
+                onPressed: _isLoading ? null : _submit,
                 style: FilledButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
-                child: const Text('Complete Registration'),
+                child: _isLoading
+                    ? const CircularProgressIndicator()
+                    : const Text('Complete Registration'),
               ),
             ],
           ),

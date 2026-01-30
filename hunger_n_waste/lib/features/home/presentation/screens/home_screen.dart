@@ -281,19 +281,48 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       // Let's add standard Supabase update here for speed or refactor repo in next step.
       // I'll update it directly here for now to verify, but ideally Repo should handle it.
 
+      // 3. Find and Assign Rider (Simulation)
+      // Query "rider_profiles" where is_available = true
+      final availableRiders = await Supabase.instance.client
+          .from('rider_profiles')
+          .select()
+          .eq('is_available', true)
+          .limit(1);
+
+      String? assignedRiderId;
+      if (availableRiders.isNotEmpty) {
+        assignedRiderId = availableRiders.first['id'] as String;
+      }
+
+      // 4. Update Status and Assign Rider
       await Supabase.instance.client
           .from('food_requests')
-          .update({'status': 'pending_pickup', 'donor_id': user.id})
+          .update({
+            'status': 'pending_pickup',
+            'donor_id': user.id,
+            'rider_id': assignedRiderId, // Can be null if no riders available
+          })
           .eq('id', req.id);
 
-      // 4. Refresh List
+      // If rider assigned, set them to unavailable (optional, but good for demo)
+      if (assignedRiderId != null) {
+        // await Supabase.instance.client.from('rider_profiles').update({
+        //   'is_available': false,
+        // }).eq('id', assignedRiderId);
+        // Keeping them available for simplicity in demo
+      }
+
+      // 5. Refresh List
       // ignore: unused_result
       ref.refresh(activeRequestsProvider);
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Thank you! Pickup scheduled.')),
-        );
+        final msg = assignedRiderId != null
+            ? 'Thank you! Rider assigned.'
+            : 'Thank you! Searching for a rider...';
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(msg)));
       }
     } catch (e) {
       if (mounted) {
