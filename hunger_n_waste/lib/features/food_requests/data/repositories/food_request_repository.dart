@@ -2,7 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:latlong2/latlong.dart';
 import '../../domain/models/food_request.dart';
-import '../../auth/domain/models/rider_profile.dart';
+import '../../../auth/domain/models/rider_profile.dart';
 
 final foodRequestRepositoryProvider = Provider<FoodRequestRepository>((ref) {
   return FoodRequestRepository(Supabase.instance.client);
@@ -154,5 +154,15 @@ class FoodRequestRepository {
       //   'is_available': false,
       // }).eq('id', assignedRiderId);
     }
+  }
+
+  Future<void> updateRequestStatus({
+    required String requestId,
+    required String status,
+  }) async {
+    await _client
+        .from('food_requests')
+        .update({'status': status})
+        .eq('id', requestId);
   }
 }

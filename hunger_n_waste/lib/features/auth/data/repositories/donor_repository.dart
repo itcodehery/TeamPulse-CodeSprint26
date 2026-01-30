@@ -27,4 +27,15 @@ class DonorRepository {
     // 2. Create Donor Profile
     await _client.from('donor_profiles').insert(donorProfile.toJson());
   }
+
+  Future<DonorProfile?> getProfile(String id) async {
+    final response = await _client
+        .from('donor_profiles')
+        .select()
+        .eq('id', id)
+        .maybeSingle();
+
+    if (response == null) return null;
+    return DonorProfile.fromJson(response);
+  }
 }
