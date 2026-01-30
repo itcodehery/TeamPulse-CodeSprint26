@@ -9,6 +9,7 @@ import '../../../food_requests/presentation/providers/active_requests_provider.d
 import '../../../food_requests/domain/models/food_request.dart';
 import '../providers/organizations_provider.dart';
 import '../widgets/organization_card.dart';
+import '../../../../core/widgets/location_picker_screen.dart';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../food_requests/data/repositories/food_request_repository.dart';
@@ -611,7 +612,64 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  Future<void> _donateAndFulfill(FoodRequest req) async {
+  Future<void> _showLocationPickerDialog(FoodRequest req) async {
+    final result = await showDialog<String>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Pickup Location'),
+          content: const Text('Where should the rider pick up the donation?'),
+          actions: [
+            TextButton.icon(
+              onPressed: () => Navigator.of(context).pop('current'),
+              icon: const Icon(Icons.my_location),
+              label: const Text('Use Current Location'),
+            ),
+            TextButton.icon(
+              onPressed: () => Navigator.of(context).pop('select'),
+              icon: const Icon(Icons.map),
+              label: const Text('Select on Map'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (result == null) return; // User cancelled
+
+    LatLng? pickupLocation;
+
+    if (result == 'current') {
+      // Use current location
+      if (_currentPosition == null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Current location not available. Please enable GPS.',
+              ),
+            ),
+          );
+        }
+        return;
+      }
+      pickupLocation = _currentPosition;
+    } else if (result == 'select') {
+      // Navigate to location picker screen
+      final selectedLocation = await Navigator.of(context).push<LatLng>(
+        MaterialPageRoute(builder: (context) => const LocationPickerScreen()),
+      );
+
+      if (selectedLocation == null) return; // User cancelled
+      pickupLocation = selectedLocation;
+    }
+
+    if (pickupLocation != null) {
+      await _donateAndFulfill(req, pickupLocation);
+    }
+  }
+
+  Future<void> _donateAndFulfill(FoodRequest req, LatLng pickupLocation) async {
     // 1. Check Auth logic (assuming already logged in)
     final user = Supabase.instance.client.auth.currentUser;
     if (user == null) {
@@ -629,6 +687,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
     try {
       // 3. Use Repository to fulfill request
+      // TODO: Update this to pass the pickup location to the repository
       await ref
           .read(foodRequestRepositoryProvider)
           .fulfillRequest(requestId: req.id, donorId: user.id);

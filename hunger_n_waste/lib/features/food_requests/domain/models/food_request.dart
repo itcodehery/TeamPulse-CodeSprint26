@@ -82,4 +82,20 @@ class FoodRequest {
     if (camel == 'inTransit') return 'in_transit';
     return camel;
   }
+
+  /// Returns a user-friendly display string for the current status
+  String get statusDisplayString {
+    switch (status) {
+      case FoodRequestStatus.open:
+        return 'Open';
+      case FoodRequestStatus.pendingPickup:
+        return 'Pending Pickup';
+      case FoodRequestStatus.inTransit:
+        return 'In Transit';
+      case FoodRequestStatus.completed:
+        return 'Completed';
+      case FoodRequestStatus.cancelled:
+        return 'Cancelled';
+    }
+  }
 }

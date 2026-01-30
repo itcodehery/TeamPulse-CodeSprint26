@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../providers/donor_contributions_provider.dart';
+import '../../domain/models/food_request.dart';
 
 class DonorContributionsScreen extends ConsumerWidget {
   const DonorContributionsScreen({super.key});
@@ -73,13 +74,15 @@ class DonorContributionsScreen extends ConsumerWidget {
                               vertical: 4,
                             ),
                             decoration: BoxDecoration(
-                              color: Colors.green.withOpacity(0.1),
+                              color: _getStatusColor(
+                                req.status,
+                              ).withOpacity(0.1),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Text(
-                              req.status.name.toUpperCase(),
-                              style: const TextStyle(
-                                color: Colors.green,
+                              req.statusDisplayString,
+                              style: TextStyle(
+                                color: _getStatusColor(req.status),
                                 fontSize: 12,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -133,5 +136,20 @@ class DonorContributionsScreen extends ConsumerWidget {
         loading: () => const Center(child: CircularProgressIndicator()),
       ),
     );
+  }
+
+  Color _getStatusColor(FoodRequestStatus status) {
+    switch (status) {
+      case FoodRequestStatus.completed:
+        return Colors.green;
+      case FoodRequestStatus.inTransit:
+        return Colors.blue;
+      case FoodRequestStatus.pendingPickup:
+        return Colors.orange;
+      case FoodRequestStatus.open:
+        return Colors.grey;
+      case FoodRequestStatus.cancelled:
+        return Colors.red;
+    }
   }
 }
