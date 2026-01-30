@@ -3,9 +3,10 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../features/home/presentation/screens/home_screen.dart';
 import '../features/auth/presentation/screens/login_screen.dart';
-import '../features/posts/presentation/screens/add_screen.dart';
+
 import '../features/profile/presentation/screens/profile_screen.dart';
 import '../features/common/presentation/widgets/scaffold_with_navbar.dart';
+import '../features/common/presentation/screens/middle_tab_screen.dart';
 import '../features/auth/presentation/screens/user_type_selection_screen.dart';
 import '../features/auth/presentation/screens/donor_registration_screen.dart';
 import '../features/auth/presentation/screens/organization_registration_screen.dart';
@@ -87,7 +88,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             routes: [
               GoRoute(
                 path: '/add',
-                builder: (context, state) => const AddScreen(),
+                builder: (context, state) => const MiddleTabScreen(),
               ),
             ],
           ),

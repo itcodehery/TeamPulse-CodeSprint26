@@ -213,8 +213,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
           // Organization List Sheet
           DraggableScrollableSheet(
-            initialChildSize: 0.3,
-            minChildSize: 0.1,
+            initialChildSize: 0.35,
+            minChildSize: 0.18,
             maxChildSize: 0.8,
             builder: (context, scrollController) {
               return Container(
@@ -231,98 +231,136 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     ),
                   ],
                 ),
-                child: Column(
-                  children: [
-                    // Handle bar
-                    Container(
-                      margin: const EdgeInsets.symmetric(vertical: 12),
-                      width: 40,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: Colors.grey[300],
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                    // Search bar
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: TextField(
-                        controller: _searchController,
-                        decoration: InputDecoration(
-                          hintText: 'Search organizations...',
-                          prefixIcon: const Icon(Icons.search),
-                          suffixIcon: _searchQuery.isNotEmpty
-                              ? IconButton(
-                                  icon: const Icon(Icons.clear),
-                                  onPressed: () {
-                                    _searchController.clear();
-                                  },
-                                )
-                              : null,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(color: Colors.grey[300]!),
+                child: CustomScrollView(
+                  controller: scrollController,
+                  slivers: [
+                    SliverToBoxAdapter(
+                      child: Column(
+                        children: [
+                          // Handle bar
+                          Container(
+                            margin: const EdgeInsets.symmetric(vertical: 12),
+                            width: 40,
+                            height: 4,
+                            decoration: BoxDecoration(
+                              color: Colors.grey[300],
+                              borderRadius: BorderRadius.circular(2),
+                            ),
                           ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(color: Colors.grey[300]!),
-                          ),
-                          filled: true,
-                          fillColor: Colors.grey[50],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    // Organizations list
-                    Expanded(
-                      child: ref
-                          .watch(allOrganizationsProvider)
-                          .when(
-                            data: (organizations) {
-                              // Filter organizations based on search
-                              final filteredOrgs = organizations.where((org) {
-                                if (_searchQuery.isEmpty) return true;
-                                return org.organizationName
-                                        .toLowerCase()
-                                        .contains(_searchQuery) ||
-                                    org.address.toLowerCase().contains(
-                                      _searchQuery,
-                                    );
-                              }).toList();
-
-                              if (filteredOrgs.isEmpty) {
-                                return Center(
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Icon(
-                                        Icons.search_off,
-                                        size: 64,
-                                        color: Colors.grey[400],
-                                      ),
-                                      const SizedBox(height: 16),
-                                      Text(
-                                        'No organizations found',
-                                        style: GoogleFonts.poppins(
-                                          fontSize: 16,
-                                          color: Colors.grey[600],
-                                        ),
-                                      ),
-                                    ],
+                          // Search bar
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: TextField(
+                              controller: _searchController,
+                              decoration: InputDecoration(
+                                hintText: 'Search organizations...',
+                                prefixIcon: const Icon(Icons.search),
+                                suffixIcon: _searchQuery.isNotEmpty
+                                    ? IconButton(
+                                        icon: const Icon(Icons.clear),
+                                        onPressed: () {
+                                          _searchController.clear();
+                                        },
+                                      )
+                                    : null,
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(
+                                    color: Colors.grey[300]!,
                                   ),
-                                );
-                              }
-
-                              return ListView.builder(
-                                controller: scrollController,
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
                                 ),
-                                itemCount: filteredOrgs.length,
-                                itemBuilder: (context, index) {
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(
+                                    color: Colors.grey[300]!,
+                                  ),
+                                ),
+                                filled: true,
+                                fillColor: Colors.grey[50],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                        ],
+                      ),
+                    ),
+                    ref
+                        .watch(allOrganizationsProvider)
+                        .when(
+                          data: (organizations) {
+                            final activeRequestsAsync = ref.watch(
+                              activeRequestsProvider,
+                            );
+                            final activeOrgIds =
+                                activeRequestsAsync.asData?.value
+                                    .map((req) => req.orgId)
+                                    .toSet() ??
+                                {};
+
+                            // Filter organizations based on search
+                            final filteredOrgs = organizations.where((org) {
+                              if (_searchQuery.isEmpty) return true;
+                              return org.organizationName
+                                      .toLowerCase()
+                                      .contains(_searchQuery) ||
+                                  org.address.toLowerCase().contains(
+                                    _searchQuery,
+                                  );
+                            }).toList();
+
+                            // Sort: Open first, then closed
+                            filteredOrgs.sort((a, b) {
+                              final aOpen = activeOrgIds.contains(a.id);
+                              final bOpen = activeOrgIds.contains(b.id);
+                              if (aOpen && !bOpen) return -1;
+                              if (!aOpen && bOpen) return 1;
+                              return 0;
+                            });
+
+                            if (filteredOrgs.isEmpty) {
+                              return SliverToBoxAdapter(
+                                child: Padding(
+                                  padding: const EdgeInsets.all(24.0),
+                                  child: Center(
+                                    child: Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        Icon(
+                                          Icons.search_off,
+                                          size: 64,
+                                          color: Colors.grey[400],
+                                        ),
+                                        const SizedBox(height: 16),
+                                        Text(
+                                          'No organizations found',
+                                          style: GoogleFonts.poppins(
+                                            fontSize: 16,
+                                            color: Colors.grey[600],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              );
+                            }
+
+                            return SliverPadding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                              ),
+                              sliver: SliverList(
+                                delegate: SliverChildBuilderDelegate((
+                                  context,
+                                  index,
+                                ) {
                                   final org = filteredOrgs[index];
+                                  final isOpen = activeOrgIds.contains(org.id);
+
                                   return OrganizationCard(
                                     organization: org,
+                                    isOpen: isOpen,
                                     onTap: () {
                                       // Move map to organization location if coordinates exist
                                       if (org.latitude != null &&
@@ -334,17 +372,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                       }
                                     },
                                   );
-                                },
-                              );
-                            },
-                            error: (err, stack) => Center(
+                                }, childCount: filteredOrgs.length),
+                              ),
+                            );
+                          },
+                          error: (err, stack) => SliverToBoxAdapter(
+                            child: Center(
                               child: Text('Error loading organizations: $err'),
                             ),
-                            loading: () => const Center(
-                              child: CircularProgressIndicator(),
-                            ),
                           ),
-                    ),
+                          loading: () => const SliverToBoxAdapter(
+                            child: Center(child: CircularProgressIndicator()),
+                          ),
+                        ),
                   ],
                 ),
               );

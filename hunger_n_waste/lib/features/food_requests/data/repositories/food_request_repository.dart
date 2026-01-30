@@ -67,4 +67,20 @@ class FoodRequestRepository {
         .map((json) => FoodRequest.fromJson(json))
         .toList();
   }
+
+  Future<List<FoodRequest>> getDonorContributions(String donorId) async {
+    final response = await _client
+        .from('food_requests')
+        .select('*, organization_profiles(*)')
+        .eq('donor_id', donorId)
+        .neq(
+          'status',
+          'open',
+        ) // Assuming contributions are fulfilled/closed/pending
+        .order('created_at', ascending: false);
+
+    return (response as List)
+        .map((json) => FoodRequest.fromJson(json))
+        .toList();
+  }
 }

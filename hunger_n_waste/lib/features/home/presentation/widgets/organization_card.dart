@@ -5,17 +5,50 @@ import '../../../auth/domain/models/organization_profile.dart';
 class OrganizationCard extends StatelessWidget {
   final OrganizationProfile organization;
   final VoidCallback? onTap;
+  final bool isOpen;
 
-  const OrganizationCard({super.key, required this.organization, this.onTap});
+  const OrganizationCard({
+    super.key,
+    required this.organization,
+    this.onTap,
+    this.isOpen = true,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Card(
+    // Greyscale matrix
+    const ColorFilter greyscaleFilter = ColorFilter.matrix(<double>[
+      0.2126,
+      0.7152,
+      0.0722,
+      0,
+      0,
+      0.2126,
+      0.7152,
+      0.0722,
+      0,
+      0,
+      0.2126,
+      0.7152,
+      0.0722,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+    ]);
+
+    Widget cardContent = Card(
       margin: const EdgeInsets.only(bottom: 12),
-      elevation: 2,
+      elevation: isOpen ? 2 : 0, // Remove elevation if closed
+      color: isOpen
+          ? Colors.white
+          : Colors.grey[100], // Dim background if closed
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: InkWell(
-        onTap: onTap,
+        onTap: isOpen ? onTap : null, // Disable tap if closed
         borderRadius: BorderRadius.circular(12),
         child: Padding(
           padding: const EdgeInsets.all(12),
@@ -97,12 +130,31 @@ class OrganizationCard extends StatelessWidget {
                   ],
                 ),
               ),
-              const Icon(Icons.chevron_right, color: Colors.grey),
+              if (isOpen)
+                const Icon(Icons.chevron_right, color: Colors.grey)
+              else
+                Text(
+                  'CLOSED',
+                  style: GoogleFonts.roboto(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey,
+                  ),
+                ),
             ],
           ),
         ),
       ),
     );
+
+    if (!isOpen) {
+      return ColorFiltered(
+        colorFilter: greyscaleFilter,
+        child: Opacity(opacity: 0.7, child: cardContent),
+      );
+    }
+
+    return cardContent;
   }
 
   Color _getColorForType(dynamic organizationType) {
