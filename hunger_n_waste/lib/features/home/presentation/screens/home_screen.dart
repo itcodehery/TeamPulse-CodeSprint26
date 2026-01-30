@@ -4,6 +4,8 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:geolocator/geolocator.dart';
+import '../../data/dummy_ngos.dart';
+import '../widgets/organization_card.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -110,9 +112,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                 userAgentPackageName: 'com.example.hunger_n_waste',
               ),
-              if (_currentPosition != null)
-                MarkerLayer(
-                  markers: [
+              MarkerLayer(
+                markers: [
+                  if (_currentPosition != null)
                     Marker(
                       key: const ValueKey('user_marker'),
                       point: _currentPosition!,
@@ -124,44 +126,93 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         child: Icon(Icons.person, color: Colors.blue, size: 40),
                       ),
                     ),
-                  ],
-                ),
+                  ...dummyNGOs.map((ngo) {
+                    return Marker(
+                      key: ValueKey(ngo.id),
+                      point: LatLng(ngo.latitude ?? 0, ngo.longitude ?? 0),
+                      width: 50,
+                      height: 50,
+                      child: const Icon(
+                        Icons.location_on,
+                        color: Colors.red,
+                        size: 50,
+                      ),
+                    );
+                  }),
+                ],
+              ),
             ],
           ),
-          Positioned(
-            bottom: 20,
-            left: 20,
-            right: 20,
-            child: Card(
-              elevation: 4,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Find Food Nearby',
-                      style: GoogleFonts.poppins(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Check the map for available food donations around you.',
-                      style: GoogleFonts.roboto(
-                        fontSize: 14,
-                        color: Colors.grey[600],
-                      ),
+          DraggableScrollableSheet(
+            initialChildSize: 0.4,
+            minChildSize: 0.15,
+            maxChildSize: 0.9,
+            builder: (context, scrollController) {
+              return Container(
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black12,
+                      blurRadius: 10,
+                      spreadRadius: 2,
                     ),
                   ],
                 ),
-              ),
-            ),
+                child: ListView.builder(
+                  controller: scrollController,
+                  padding: const EdgeInsets.all(16),
+                  itemCount: dummyNGOs.length + 1, // +1 for search bar
+                  itemBuilder: (context, index) {
+                    if (index == 0) {
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 16.0),
+                        child: Column(
+                          children: [
+                            // Drag Handle
+                            Container(
+                              width: 40,
+                              height: 4,
+                              margin: const EdgeInsets.only(bottom: 16),
+                              decoration: BoxDecoration(
+                                color: Colors.grey[300],
+                                borderRadius: BorderRadius.circular(2),
+                              ),
+                            ),
+                            // Search Bar
+                            TextField(
+                              decoration: InputDecoration(
+                                hintText: 'Search for places to donate...',
+                                hintStyle: GoogleFonts.roboto(
+                                  color: Colors.grey,
+                                ),
+                                prefixIcon: const Icon(Icons.search),
+                                filled: true,
+                                fillColor: Colors.grey[100],
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide.none,
+                                ),
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 12,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+                    final ngo = dummyNGOs[index - 1];
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 16.0),
+                      child: OrganizationCard(organization: ngo),
+                    );
+                  },
+                ),
+              );
+            },
           ),
         ],
       ),
