@@ -16,6 +16,8 @@ class HomeScreen extends ConsumerStatefulWidget {
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   final MapController _mapController = MapController();
+  final DraggableScrollableController _sheetController =
+      DraggableScrollableController();
   LatLng? _currentPosition;
   bool _isMapReady = false;
   bool _hasMovedToUser = false;
@@ -144,6 +146,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ],
           ),
           DraggableScrollableSheet(
+            controller: _sheetController,
             initialChildSize: 0.4,
             minChildSize: 0.15,
             maxChildSize: 0.9,
@@ -207,7 +210,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     final ngo = dummyNGOs[index - 1];
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 16.0),
-                      child: OrganizationCard(organization: ngo),
+                      child: GestureDetector(
+                        onTap: () {
+                          if (ngo.latitude != null && ngo.longitude != null) {
+                            _mapController.move(
+                              LatLng(ngo.latitude!, ngo.longitude!),
+                              15.0,
+                            );
+                            _sheetController.animateTo(
+                              0.15,
+                              duration: const Duration(milliseconds: 300),
+                              curve: Curves.easeInOut,
+                            );
+                          }
+                        },
+                        child: OrganizationCard(organization: ngo),
+                      ),
                     );
                   },
                 ),
