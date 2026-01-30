@@ -4,8 +4,11 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:geolocator/geolocator.dart';
-import '../../data/dummy_ngos.dart';
-import '../widgets/organization_card.dart';
+
+import '../../../food_requests/presentation/providers/active_requests_provider.dart';
+import '../../../food_requests/domain/models/food_request.dart';
+
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -16,8 +19,7 @@ class HomeScreen extends ConsumerStatefulWidget {
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   final MapController _mapController = MapController();
-  final DraggableScrollableController _sheetController =
-      DraggableScrollableController();
+
   LatLng? _currentPosition;
   bool _isMapReady = false;
   bool _hasMovedToUser = false;
@@ -128,112 +130,177 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         child: Icon(Icons.person, color: Colors.blue, size: 40),
                       ),
                     ),
-                  ...dummyNGOs.map((ngo) {
-                    return Marker(
-                      key: ValueKey(ngo.id),
-                      point: LatLng(ngo.latitude ?? 0, ngo.longitude ?? 0),
-                      width: 50,
-                      height: 50,
-                      child: const Icon(
-                        Icons.location_on,
-                        color: Colors.red,
-                        size: 50,
+                  ...ref
+                      .watch(activeRequestsProvider)
+                      .when(
+                        data: (requests) {
+                          return requests
+                              .map((req) {
+                                // Use Org location if available
+                                final lat = req.organization?.latitude;
+                                final long = req.organization?.longitude;
+
+                                if (lat == null || long == null) return null;
+
+                                return Marker(
+                                  key: ValueKey(req.id),
+                                  point: LatLng(lat, long),
+                                  width: 60,
+                                  height: 60,
+                                  child: GestureDetector(
+                                    onTap: () =>
+                                        _showRequestDetails(context, req),
+                                    child: Stack(
+                                      children: [
+                                        const Icon(
+                                          Icons.location_on,
+                                          color: Colors.red,
+                                          size: 50,
+                                        ),
+                                        Positioned(
+                                          top: 0,
+                                          right: 0,
+                                          child: Container(
+                                            padding: const EdgeInsets.all(4),
+                                            decoration: const BoxDecoration(
+                                              color: Colors.green,
+                                              shape: BoxShape.circle,
+                                            ),
+                                            child: Text(
+                                              '${req.quantity}',
+                                              style: const TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              })
+                              .whereType<Marker>()
+                              .toList();
+                        },
+                        error: (err, stack) => [],
+                        loading: () => [],
                       ),
-                    );
-                  }),
                 ],
               ),
             ],
           ),
-          DraggableScrollableSheet(
-            controller: _sheetController,
-            initialChildSize: 0.4,
-            minChildSize: 0.15,
-            maxChildSize: 0.9,
-            builder: (context, scrollController) {
-              return Container(
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black12,
-                      blurRadius: 10,
-                      spreadRadius: 2,
-                    ),
-                  ],
-                ),
-                child: ListView.builder(
-                  controller: scrollController,
-                  padding: const EdgeInsets.all(16),
-                  itemCount: dummyNGOs.length + 1, // +1 for search bar
-                  itemBuilder: (context, index) {
-                    if (index == 0) {
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 16.0),
-                        child: Column(
-                          children: [
-                            // Drag Handle
-                            Container(
-                              width: 40,
-                              height: 4,
-                              margin: const EdgeInsets.only(bottom: 16),
-                              decoration: BoxDecoration(
-                                color: Colors.grey[300],
-                                borderRadius: BorderRadius.circular(2),
-                              ),
-                            ),
-                            // Search Bar
-                            TextField(
-                              decoration: InputDecoration(
-                                hintText: 'Search for places to donate...',
-                                hintStyle: GoogleFonts.roboto(
-                                  color: Colors.grey,
-                                ),
-                                prefixIcon: const Icon(Icons.search),
-                                filled: true,
-                                fillColor: Colors.grey[100],
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide.none,
-                                ),
-                                contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 12,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    }
-                    final ngo = dummyNGOs[index - 1];
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 16.0),
-                      child: GestureDetector(
-                        onTap: () {
-                          if (ngo.latitude != null && ngo.longitude != null) {
-                            _mapController.move(
-                              LatLng(ngo.latitude!, ngo.longitude!),
-                              15.0,
-                            );
-                            _sheetController.animateTo(
-                              0.15,
-                              duration: const Duration(milliseconds: 300),
-                              curve: Curves.easeInOut,
-                            );
-                          }
-                        },
-                        child: OrganizationCard(organization: ngo),
-                      ),
-                    );
-                  },
-                ),
-              );
-            },
-          ),
+
+          // We can keep the DraggableScrollableSheet for "List View" of requests later if needed
+          // For now, let's just use the BottomSheet on tap
         ],
       ),
     );
+  }
+
+  void _showRequestDetails(BuildContext context, FoodRequest req) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.all(24),
+          width: double.infinity,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                req.foodType,
+                style: Theme.of(context).textTheme.headlineSmall,
+              ),
+              const SizedBox(height: 8),
+              if (req.organization != null)
+                Text(
+                  'Provided by: ${req.organization!.organizationName}',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  const Icon(Icons.people),
+                  const SizedBox(width: 8),
+                  Text('${req.quantity} people can be fed'),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  const Icon(Icons.location_on_outlined),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      req.organization?.address ?? 'Unknown Location',
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: () => _donateAndFulfill(req),
+                  icon: const Icon(Icons.volunteer_activism),
+                  label: const Text('Donate & Fulfill'),
+                ),
+              ),
+              const SizedBox(height: 24),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _donateAndFulfill(FoodRequest req) async {
+    // 1. Check Auth logic (assuming already logged in)
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Please log in')));
+      return;
+    }
+
+    // 2. Optimistic Update / Loader
+    Navigator.pop(context); // Close sheet
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Processing donation...')));
+
+    try {
+      // 3. Update Status via Repo (Need a method for this)
+      // Since I haven't added `updateRequest` to Repo yet, I'll do it via basic client or add it.
+      // Better to add it to Repo. But for now, let's do direct update or assume I'll add it.
+      // Let's add standard Supabase update here for speed or refactor repo in next step.
+      // I'll update it directly here for now to verify, but ideally Repo should handle it.
+
+      await Supabase.instance.client
+          .from('food_requests')
+          .update({'status': 'pending_pickup', 'donor_id': user.id})
+          .eq('id', req.id);
+
+      // 4. Refresh List
+      // ignore: unused_result
+      ref.refresh(activeRequestsProvider);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Thank you! Pickup scheduled.')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
+    }
   }
 }

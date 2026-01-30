@@ -3,11 +3,85 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:go_router/go_router.dart';
 
-class LoginScreen extends ConsumerWidget {
+import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../data/repositories/auth_repository.dart';
+import '../../data/repositories/organization_repository.dart';
+
+class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends ConsumerState<LoginScreen> {
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  bool _isLoading = false;
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _login() async {
+    final email = _emailController.text.trim();
+    final password = _passwordController.text;
+
+    if (email.isEmpty || password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter both email and password')),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      final authRepo = ref.read(authRepositoryProvider);
+
+      // 1. Sign In
+      await authRepo.signInWithEmail(email, password);
+
+      // 2. Determine User Role for Routing
+      // We need the user ID to check profiles
+      final user = Supabase.instance.client.auth.currentUser;
+      if (user == null) throw Exception('Login succeeded but user is null');
+
+      // Check if Organization
+      final orgRepo = ref.read(organizationRepositoryProvider);
+      final orgProfile = await orgRepo.getProfile(user.id);
+
+      if (mounted) {
+        if (orgProfile != null) {
+          context.go('/organization-home');
+        } else {
+          // Assume Donor/Rider for now, or check other profiles if they existed
+          // Defaulting to standard home
+          context.go('/home');
+        }
+      }
+    } on AuthException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(e.message)));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Login failed: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
         child: Padding(
@@ -43,19 +117,22 @@ class LoginScreen extends ConsumerWidget {
               const SizedBox(height: 48),
 
               // Email Field
-              const TextField(
-                decoration: InputDecoration(
+              TextField(
+                controller: _emailController,
+                decoration: const InputDecoration(
                   labelText: 'Email',
                   border: OutlineInputBorder(),
                   prefixIcon: Icon(Icons.email_outlined),
                 ),
+                keyboardType: TextInputType.emailAddress,
               ),
               const SizedBox(height: 16),
 
               // Password Field
-              const TextField(
+              TextField(
+                controller: _passwordController,
                 obscureText: true,
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   labelText: 'Password',
                   border: OutlineInputBorder(),
                   prefixIcon: Icon(Icons.lock_outline),
@@ -67,7 +144,9 @@ class LoginScreen extends ConsumerWidget {
               Align(
                 alignment: Alignment.centerRight,
                 child: TextButton(
-                  onPressed: () {},
+                  onPressed: () {
+                    // TODO: Implement forgot password
+                  },
                   child: const Text('Forgot Password?'),
                 ),
               ),
@@ -75,20 +154,20 @@ class LoginScreen extends ConsumerWidget {
 
               // Login Button
               FilledButton(
-                onPressed: () {
-                  // Placeholder: Navigate to role selection on "login" if needed,
-                  // or actually perform login
-                  // For now, let's assume login success goes to home
-                  // BUT the prompt asked for "Sign up" button to go to role selection.
-                  // So Login should ideally go to home?
-                  // The prompt said: "in the screen that only has a Login button, add a signup button as well."
-                  // And "Router should primarily lead to auth screens first".
-                  context.go('/home');
-                },
+                onPressed: _isLoading ? null : _login,
                 style: FilledButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
-                child: const Text('Login'),
+                child: _isLoading
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Text('Login'),
               ),
               const Spacer(),
 

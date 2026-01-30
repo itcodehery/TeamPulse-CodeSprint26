@@ -1,3 +1,5 @@
+import '../../../auth/domain/models/organization_profile.dart';
+
 enum FoodRequestStatus { open, pendingPickup, inTransit, completed, cancelled }
 
 class FoodRequest {
@@ -10,6 +12,7 @@ class FoodRequest {
   final String? riderId;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final OrganizationProfile? organization; // Joined data
   // We might store location here or fetch from Org, assuming stored for now or handled via join
 
   const FoodRequest({
@@ -22,6 +25,7 @@ class FoodRequest {
     this.riderId,
     required this.createdAt,
     required this.updatedAt,
+    this.organization,
   });
 
   factory FoodRequest.fromJson(Map<String, dynamic> json) {
@@ -38,6 +42,9 @@ class FoodRequest {
       riderId: json['rider_id'] as String?,
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
+      organization: json['organization_profiles'] != null
+          ? OrganizationProfile.fromJson(json['organization_profiles'])
+          : null,
     );
   }
 

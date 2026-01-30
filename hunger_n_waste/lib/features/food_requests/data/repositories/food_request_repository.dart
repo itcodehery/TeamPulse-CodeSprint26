@@ -55,4 +55,16 @@ class FoodRequestRepository {
         .order('created_at', ascending: false)
         .map((maps) => maps.map((map) => FoodRequest.fromJson(map)).toList());
   }
+
+  Future<List<FoodRequest>> getActiveRequests() async {
+    final response = await _client
+        .from('food_requests')
+        .select('*, organization_profiles(*)')
+        .eq('status', 'open')
+        .order('created_at', ascending: false);
+
+    return (response as List)
+        .map((json) => FoodRequest.fromJson(json))
+        .toList();
+  }
 }
