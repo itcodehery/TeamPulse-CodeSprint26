@@ -11,10 +11,11 @@ Future<void> main() async {
   await dotenv.load(fileName: ".env");
 
   // Initialize Supabase
-  // await Supabase.initialize(
-  //   url: SupabaseConstants.supabaseUrl,
-  //   anonKey: SupabaseConstants.supabaseAnonKey,
-  // );
+  // Initialize Supabase
+  await Supabase.initialize(
+    url: SupabaseConstants.supabaseUrl,
+    anonKey: SupabaseConstants.supabaseAnonKey,
+  );
 
   runApp(const ProviderScope(child: MyApp()));
 }
