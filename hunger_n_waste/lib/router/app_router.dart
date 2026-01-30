@@ -16,7 +16,7 @@ final routerProvider = Provider<GoRouter>((ref) {
 
   return GoRouter(
     navigatorKey: rootNavigatorKey,
-    initialLocation: '/home',
+    initialLocation: '/login',
     routes: [
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {
