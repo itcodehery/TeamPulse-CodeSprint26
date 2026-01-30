@@ -11,6 +11,7 @@ import '../../../auth/data/repositories/organization_repository.dart';
 import '../../../food_requests/data/repositories/food_request_repository.dart';
 import '../../../auth/domain/models/rider_profile.dart';
 import '../../../food_requests/domain/models/food_request.dart';
+import '../../../../core/services/notification_service.dart';
 
 // --- Providers ---
 
@@ -91,6 +92,7 @@ class _RiderDashboardContent extends ConsumerStatefulWidget {
 class _RiderDashboardContentState
     extends ConsumerState<_RiderDashboardContent> {
   Timer? _locationTimer;
+  final Set<String> _notifiedOrderIds = {};
 
   @override
   void initState() {
@@ -165,6 +167,36 @@ class _RiderDashboardContentState
   @override
   Widget build(BuildContext context) {
     final isAvailable = widget.profile.isAvailable;
+
+    // Listen for new available orders and notify rider
+    ref.listen(availableOrdersStreamProvider, (previous, next) {
+      // Only notify if rider is online
+      if (!isAvailable) return;
+
+      next.whenData((orders) {
+        for (var order in orders) {
+          // Only notify for orders we haven't notified about yet
+          if (!_notifiedOrderIds.contains(order.id)) {
+            _notifiedOrderIds.add(order.id);
+
+            // Don't notify on initial load (when previous is null)
+            if (previous != null) {
+              NotificationService.showStatusNotification(
+                title: 'New Order Available!',
+                body:
+                    '${order.foodType} - ${order.quantity} servings from ${order.organization?.organizationName ?? "nearby"}',
+                payload: order.id,
+              );
+            }
+          }
+        }
+
+        // Clean up notified IDs for orders that no longer exist
+        _notifiedOrderIds.removeWhere(
+          (id) => !orders.any((order) => order.id == id),
+        );
+      });
+    });
 
     return Padding(
       padding: const EdgeInsets.all(16.0),
@@ -547,6 +579,7 @@ class _JobCard extends ConsumerWidget {
     );
   }
 }
+
 // Available Order Card Widget
 class _AvailableOrderCard extends StatelessWidget {
   final FoodRequest order;
