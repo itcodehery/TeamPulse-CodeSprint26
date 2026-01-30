@@ -83,4 +83,38 @@ class FoodRequestRepository {
         .map((json) => FoodRequest.fromJson(json))
         .toList();
   }
+
+  Future<void> fulfillRequest({
+    required String requestId,
+    required String donorId,
+  }) async {
+    // 1. Find and Assign Rider (Simulation)
+    final availableRiders = await _client
+        .from('rider_profiles')
+        .select()
+        .eq('is_available', true)
+        .limit(1);
+
+    String? assignedRiderId;
+    if (availableRiders.isNotEmpty) {
+      assignedRiderId = availableRiders.first['id'] as String;
+    }
+
+    // 2. Update Status and Assign Rider
+    await _client
+        .from('food_requests')
+        .update({
+          'status': 'pending_pickup',
+          'donor_id': donorId,
+          'rider_id': assignedRiderId,
+        })
+        .eq('id', requestId);
+
+    // Optional: Set rider to unavailable
+    if (assignedRiderId != null) {
+      // await _client.from('rider_profiles').update({
+      //   'is_available': false,
+      // }).eq('id', assignedRiderId);
+    }
+  }
 }

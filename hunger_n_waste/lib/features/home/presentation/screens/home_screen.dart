@@ -11,6 +11,7 @@ import '../providers/organizations_provider.dart';
 import '../widgets/organization_card.dart';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../../food_requests/data/repositories/food_request_repository.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -484,54 +485,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     ).showSnackBar(const SnackBar(content: Text('Processing donation...')));
 
     try {
-      // 3. Update Status via Repo (Need a method for this)
-      // Since I haven't added `updateRequest` to Repo yet, I'll do it via basic client or add it.
-      // Better to add it to Repo. But for now, let's do direct update or assume I'll add it.
-      // Let's add standard Supabase update here for speed or refactor repo in next step.
-      // I'll update it directly here for now to verify, but ideally Repo should handle it.
+      // 3. Use Repository to fulfill request
+      await ref
+          .read(foodRequestRepositoryProvider)
+          .fulfillRequest(requestId: req.id, donorId: user.id);
 
-      // 3. Find and Assign Rider (Simulation)
-      // Query "rider_profiles" where is_available = true
-      final availableRiders = await Supabase.instance.client
-          .from('rider_profiles')
-          .select()
-          .eq('is_available', true)
-          .limit(1);
-
-      String? assignedRiderId;
-      if (availableRiders.isNotEmpty) {
-        assignedRiderId = availableRiders.first['id'] as String;
-      }
-
-      // 4. Update Status and Assign Rider
-      await Supabase.instance.client
-          .from('food_requests')
-          .update({
-            'status': 'pending_pickup',
-            'donor_id': user.id,
-            'rider_id': assignedRiderId, // Can be null if no riders available
-          })
-          .eq('id', req.id);
-
-      // If rider assigned, set them to unavailable (optional, but good for demo)
-      if (assignedRiderId != null) {
-        // await Supabase.instance.client.from('rider_profiles').update({
-        //   'is_available': false,
-        // }).eq('id', assignedRiderId);
-        // Keeping them available for simplicity in demo
-      }
-
-      // 5. Refresh List
+      // 4. Refresh List
       // ignore: unused_result
       ref.refresh(activeRequestsProvider);
 
       if (mounted) {
-        final msg = assignedRiderId != null
-            ? 'Thank you! Rider assigned.'
-            : 'Thank you! Searching for a rider...';
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(msg)));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Thank you! Donation confirmed & Rider assigned.'),
+          ),
+        );
       }
     } catch (e) {
       if (mounted) {
