@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:latlong2/latlong.dart';
 import '../../domain/models/food_request.dart';
+import '../../auth/domain/models/rider_profile.dart';
 
 final foodRequestRepositoryProvider = Provider<FoodRequestRepository>((ref) {
   return FoodRequestRepository(Supabase.instance.client);
@@ -88,19 +90,55 @@ class FoodRequestRepository {
     required String requestId,
     required String donorId,
   }) async {
-    // 1. Find and Assign Rider (Simulation)
-    final availableRiders = await _client
+    // 1. Get the Request details to know the Pickup Location
+    final requestData = await _client
+        .from('food_requests')
+        .select('latitude, longitude')
+        .eq('id', requestId)
+        .single();
+
+    final double requestLat = requestData['latitude'];
+    final double requestLong = requestData['longitude'];
+
+    // 2. Fetch all Available Riders
+    final availableRidersData = await _client
         .from('rider_profiles')
         .select()
-        .eq('is_available', true)
-        .limit(1);
+        .eq('is_available', true);
+
+    final riders = (availableRidersData as List)
+        .map((json) => RiderProfile.fromJson(json))
+        .toList();
 
     String? assignedRiderId;
-    if (availableRiders.isNotEmpty) {
-      assignedRiderId = availableRiders.first['id'] as String;
+
+    if (riders.isNotEmpty) {
+      // 3. Find Request Location
+      final requestLoc = LatLng(requestLat, requestLong);
+      const distance = Distance();
+
+      // 4. Sort by Distance
+      riders.sort((a, b) {
+        if (a.currentLatitude == null || a.currentLongitude == null) return 1;
+        if (b.currentLatitude == null || b.currentLongitude == null) return -1;
+
+        final locA = LatLng(a.currentLatitude!, a.currentLongitude!);
+        final locB = LatLng(b.currentLatitude!, b.currentLongitude!);
+
+        final distA = distance.as(LengthUnit.Meter, requestLoc, locA);
+        final distB = distance.as(LengthUnit.Meter, requestLoc, locB);
+
+        return distA.compareTo(distB);
+      });
+
+      // 5. Pick the closest one
+      // (Filtering out those without location if needed, but sort handles it)
+      if (riders.first.currentLatitude != null) {
+        assignedRiderId = riders.first.id;
+      }
     }
 
-    // 2. Update Status and Assign Rider
+    // 6. Update Request Status & Assign Rider
     await _client
         .from('food_requests')
         .update({
@@ -110,7 +148,7 @@ class FoodRequestRepository {
         })
         .eq('id', requestId);
 
-    // Optional: Set rider to unavailable
+    // Optional: Set assigned rider to unavailable
     if (assignedRiderId != null) {
       // await _client.from('rider_profiles').update({
       //   'is_available': false,
