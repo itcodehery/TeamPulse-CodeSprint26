@@ -1,4 +1,4 @@
-# - 
+
 ### Problem Statement ID - CS01SW
 ### Team Name - Team Pulse
 ### College Name - CHRIST (Deemed to be University), Central Campus
