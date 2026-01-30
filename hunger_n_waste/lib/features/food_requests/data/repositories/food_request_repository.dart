@@ -110,23 +110,27 @@ class FoodRequestRepository {
       final requestLoc = pickupLocation;
       const distance = Distance();
 
-      // 4. Sort by Distance
-      riders.sort((a, b) {
-        if (a.currentLatitude == null || a.currentLongitude == null) return 1;
-        if (b.currentLatitude == null || b.currentLongitude == null) return -1;
+      // 4. Separate riders with and without location data
+      final ridersWithLocation = riders
+          .where((r) => r.currentLatitude != null && r.currentLongitude != null)
+          .toList();
 
-        final locA = LatLng(a.currentLatitude!, a.currentLongitude!);
-        final locB = LatLng(b.currentLatitude!, b.currentLongitude!);
+      if (ridersWithLocation.isNotEmpty) {
+        // 5. Sort by Distance (only those with location)
+        ridersWithLocation.sort((a, b) {
+          final locA = LatLng(a.currentLatitude!, a.currentLongitude!);
+          final locB = LatLng(b.currentLatitude!, b.currentLongitude!);
 
-        final distA = distance.as(LengthUnit.Meter, requestLoc, locA);
-        final distB = distance.as(LengthUnit.Meter, requestLoc, locB);
+          final distA = distance.as(LengthUnit.Meter, requestLoc, locA);
+          final distB = distance.as(LengthUnit.Meter, requestLoc, locB);
 
-        return distA.compareTo(distB);
-      });
+          return distA.compareTo(distB);
+        });
 
-      // 5. Pick the closest one
-      // (Filtering out those without location if needed, but sort handles it)
-      if (riders.first.currentLatitude != null) {
+        // 6. Pick the closest one
+        assignedRiderId = ridersWithLocation.first.id;
+      } else {
+        // 7. Fallback: No riders have location data, assign first available
         assignedRiderId = riders.first.id;
       }
     }
