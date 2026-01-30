@@ -106,6 +106,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 -0.128928,
               ), // Default to London
               initialZoom: 13.0,
+              interactionOptions: const InteractionOptions(
+                flags: InteractiveFlag.all,
+              ),
               onMapReady: () {
                 _isMapReady = true;
                 _moveToUser();
@@ -192,8 +195,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ],
           ),
 
-          // We can keep the DraggableScrollableSheet for "List View" of requests later if needed
-          // For now, let's just use the BottomSheet on tap
+          // Recenter Button
+          Positioned(
+            bottom: 180,
+            right: 16,
+            child: FloatingActionButton(
+              heroTag: 'recenter',
+              mini: true,
+              backgroundColor: Colors.white,
+              onPressed: _moveToUser,
+              child: const Icon(Icons.my_location, color: Colors.black87),
+            ),
+          ),
         ],
       ),
     );
