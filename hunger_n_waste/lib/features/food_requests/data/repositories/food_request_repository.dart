@@ -100,7 +100,10 @@ class FoodRequestRepository {
         .order('created_at', ascending: false)
         .map((data) {
           print('🟢 [WATCH AVAILABLE ORDERS] Received ${data.length} orders');
-          return data.map((json) => FoodRequest.fromJson(json)).toList();
+          return data
+              .map((json) => FoodRequest.fromJson(json))
+              .where((req) => req.status == FoodRequestStatus.pendingPickup)
+              .toList();
         });
   }
 
@@ -239,5 +242,20 @@ class FoodRequestRepository {
         .from('food_requests')
         .update({'status': status})
         .eq('id', requestId);
+  }
+
+  Future<void> assignRiderToRequest({
+    required String requestId,
+    required String riderId,
+  }) async {
+    print('🔵 [ASSIGN RIDER] Assigning rider $riderId to request $requestId');
+    await _client
+        .from('food_requests')
+        .update({
+          'rider_id': riderId,
+          'status': 'in_transit', // Setting directly to in_transit as requested
+        })
+        .eq('id', requestId);
+    print('🟢 [ASSIGN RIDER] Assignment successful');
   }
 }

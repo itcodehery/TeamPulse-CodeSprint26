@@ -274,7 +274,10 @@ class _RiderDashboardContentState
                       scrollDirection: Axis.horizontal,
                       itemCount: orders.length,
                       itemBuilder: (context, index) {
-                        return _AvailableOrderCard(order: orders[index]);
+                        return _AvailableOrderCard(
+                          order: orders[index],
+                          riderId: widget.profile.id,
+                        );
                       },
                     ),
                   );
@@ -547,14 +550,29 @@ class _JobCard extends ConsumerWidget {
     );
   }
 }
-// Available Order Card Widget
-class _AvailableOrderCard extends StatelessWidget {
-  final FoodRequest order;
 
-  const _AvailableOrderCard({required this.order});
+// Available Order Card Widget
+class _AvailableOrderCard extends ConsumerStatefulWidget {
+  final FoodRequest order;
+  final String riderId;
+
+  const _AvailableOrderCard({required this.order, required this.riderId});
+
+  @override
+  ConsumerState<_AvailableOrderCard> createState() =>
+      _AvailableOrderCardState();
+}
+
+class _AvailableOrderCardState extends ConsumerState<_AvailableOrderCard> {
+  bool _isAccepted = false;
+  bool _isLoading = false;
 
   @override
   Widget build(BuildContext context) {
+    if (_isAccepted) {
+      return const SizedBox.shrink(); // Hide immediately
+    }
+
     return Card(
       margin: const EdgeInsets.only(right: 12),
       elevation: 2,
@@ -570,7 +588,7 @@ class _AvailableOrderCard extends StatelessWidget {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    order.foodType,
+                    widget.order.foodType,
                     style: const TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
@@ -587,7 +605,7 @@ class _AvailableOrderCard extends StatelessWidget {
                 Icon(Icons.people, size: 16, color: Colors.grey[600]),
                 const SizedBox(width: 4),
                 Text(
-                  '${order.quantity} servings',
+                  '${widget.order.quantity} servings',
                   style: TextStyle(color: Colors.grey[700]),
                 ),
               ],
@@ -599,7 +617,8 @@ class _AvailableOrderCard extends StatelessWidget {
                 const SizedBox(width: 4),
                 Expanded(
                   child: Text(
-                    order.organization?.organizationName ?? 'Organization',
+                    widget.order.organization?.organizationName ??
+                        'Organization',
                     style: TextStyle(color: Colors.grey[700]),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -611,16 +630,57 @@ class _AvailableOrderCard extends StatelessWidget {
             SizedBox(
               width: double.infinity,
               child: FilledButton.icon(
-                onPressed: () {
-                  // TODO: Implement accept order logic
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Accept order feature coming soon!'),
-                    ),
-                  );
-                },
-                icon: const Icon(Icons.check_circle, size: 18),
-                label: const Text('Accept Order'),
+                onPressed: _isLoading
+                    ? null
+                    : () async {
+                        setState(() {
+                          _isLoading = true;
+                          _isAccepted = true; // Optimistic update
+                        });
+
+                        try {
+                          await ref
+                              .read(foodRequestRepositoryProvider)
+                              .assignRiderToRequest(
+                                requestId: widget.order.id,
+                                riderId: widget.riderId,
+                              );
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  'Order Accepted! Added to Active Jobs.',
+                                ),
+                                backgroundColor: Colors.green,
+                              ),
+                            );
+                          }
+                        } catch (e) {
+                          if (mounted) {
+                            setState(() {
+                              _isAccepted = false; // Revert
+                              _isLoading = false;
+                            });
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Failed to accept order'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
+                        }
+                      },
+                icon: _isLoading
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Icon(Icons.check_circle, size: 18),
+                label: Text(_isLoading ? 'Accepting...' : 'Accept Order'),
                 style: FilledButton.styleFrom(
                   backgroundColor: Theme.of(context).primaryColor,
                 ),
