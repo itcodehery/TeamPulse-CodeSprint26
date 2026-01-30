@@ -14,7 +14,6 @@ class _LocationCameraScreenState extends State<LocationCameraScreen> {
   CameraController? _controller;
   Future<void>? _initializeControllerFuture;
   Position? _currentPosition;
-  String? _address; // Optional: reverse geocoding if needed
   bool _isTakingPicture = false;
 
   @override

@@ -748,7 +748,6 @@ class _JobCard extends ConsumerWidget {
                   ),
                   const SizedBox(height: 24),
 
-<<<<<<< HEAD
                   const Text(
                     'Proof of Pickup',
                     style: TextStyle(fontWeight: FontWeight.bold),
@@ -797,27 +796,16 @@ class _JobCard extends ConsumerWidget {
                         }
                       },
                       icon: const Icon(Icons.camera_alt_outlined),
-                      label: const Text('Capture Photo Evidence'),
+                      label: Text(
+                        'Capture Photo Evidence',
+                        style: GoogleFonts.outfit(fontWeight: FontWeight.w600),
+                      ),
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         side: BorderSide(color: Colors.grey[300]!),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
-=======
-                  OutlinedButton.icon(
-                    onPressed: null,
-                    icon: const Icon(Icons.camera_rounded, size: 18),
-                    label: Text(
-                      'Capture Photo (Coming Soon)',
-                      style: GoogleFonts.outfit(fontWeight: FontWeight.w600),
-                    ),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      side: BorderSide(color: Colors.grey[200]!),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(18),
->>>>>>> camera
                       ),
                     ),
 
@@ -873,51 +861,27 @@ class _JobCard extends ConsumerWidget {
         borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
       ),
       builder: (context) {
-<<<<<<< HEAD
         String? imagePath;
 
         return StatefulBuilder(
           builder: (context, setState) {
             return Padding(
               padding: EdgeInsets.only(
-                bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+                bottom: MediaQuery.of(context).viewInsets.bottom + 32,
                 left: 24,
                 right: 24,
-                top: 16,
-=======
-        return Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom + 32,
-            left: 24,
-            right: 24,
-            top: 12,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Center(
-                child: Container(
-                  width: 36,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.grey[200],
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
->>>>>>> camera
+                top: 12,
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-<<<<<<< HEAD
                   Center(
                     child: Container(
-                      width: 40,
+                      width: 36,
                       height: 4,
                       decoration: BoxDecoration(
-                        color: Colors.grey[300],
+                        color: Colors.grey[200],
                         borderRadius: BorderRadius.circular(2),
                       ),
                     ),
@@ -926,15 +890,15 @@ class _JobCard extends ConsumerWidget {
                   Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.all(12),
+                        padding: const EdgeInsets.all(14),
                         decoration: BoxDecoration(
-                          color: Colors.green[50],
-                          borderRadius: BorderRadius.circular(12),
+                          color: const Color(0xFFE8F5E9),
+                          borderRadius: BorderRadius.circular(16),
                         ),
                         child: const Icon(
-                          Icons.check_circle_outline,
-                          color: Colors.green,
-                          size: 28,
+                          Icons.task_alt_rounded,
+                          color: Color(0xFF2E7D32),
+                          size: 26,
                         ),
                       ),
                       const SizedBox(width: 16),
@@ -944,14 +908,18 @@ class _JobCard extends ConsumerWidget {
                           children: [
                             Text(
                               'Delivery Handover',
-                              style: Theme.of(context).textTheme.titleLarge
-                                  ?.copyWith(fontWeight: FontWeight.bold),
+                              style: GoogleFonts.outfit(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black87,
+                              ),
                             ),
-                            const SizedBox(height: 4),
                             Text(
                               'Confirm receiver details',
-                              style: Theme.of(context).textTheme.bodyMedium
-                                  ?.copyWith(color: Colors.grey[600]),
+                              style: GoogleFonts.outfit(
+                                fontSize: 13,
+                                color: Colors.grey[500],
+                              ),
                             ),
                           ],
                         ),
@@ -962,13 +930,25 @@ class _JobCard extends ConsumerWidget {
 
                   TextField(
                     controller: nameController,
+                    style: GoogleFonts.outfit(fontSize: 16),
                     decoration: InputDecoration(
                       labelText: 'Receiver Name',
+                      labelStyle: GoogleFonts.outfit(color: Colors.grey[600]),
                       hintText: 'Who received the order?',
+                      hintStyle: GoogleFonts.outfit(color: Colors.grey[400]),
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(18),
+                        borderSide: BorderSide(color: Colors.grey[200]!),
                       ),
-                      prefixIcon: const Icon(Icons.person_outline),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(18),
+                        borderSide: BorderSide(color: Colors.grey[200]!),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(18),
+                        borderSide: const BorderSide(color: Color(0xFF2E7D32)),
+                      ),
+                      prefixIcon: const Icon(Icons.person_outline_rounded),
                       filled: true,
                       fillColor: Colors.grey[50],
                     ),
@@ -1005,38 +985,6 @@ class _JobCard extends ConsumerWidget {
                               ),
                               onPressed: () => setState(() => imagePath = null),
                             ),
-=======
-                  Container(
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFE8F5E9),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: const Icon(
-                      Icons.task_alt_rounded,
-                      color: Color(0xFF2E7D32),
-                      size: 26,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Delivery Handover',
-                          style: GoogleFonts.outfit(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black87,
-                          ),
-                        ),
-                        Text(
-                          'Confirm receiver details',
-                          style: GoogleFonts.outfit(
-                            fontSize: 13,
-                            color: Colors.grey[500],
->>>>>>> camera
                           ),
                         ),
                       ],
@@ -1055,7 +1003,10 @@ class _JobCard extends ConsumerWidget {
                         }
                       },
                       icon: const Icon(Icons.camera_alt_outlined),
-                      label: const Text('Capture Photo Evidence'),
+                      label: Text(
+                        'Capture Photo Evidence',
+                        style: GoogleFonts.outfit(fontWeight: FontWeight.w600),
+                      ),
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         side: BorderSide(color: Colors.grey[300]!),
@@ -1066,106 +1017,36 @@ class _JobCard extends ConsumerWidget {
                     ),
 
                   const SizedBox(height: 32),
-                  FilledButton(
-                    onPressed: () {
-                      if (nameController.text.isNotEmpty) {
-                        Navigator.pop(context);
-                        _updateStatus(context, ref, 'completed');
-                      }
-                    },
-                    style: FilledButton.styleFrom(
-                      backgroundColor: Colors.green,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                  SizedBox(
+                    height: 56,
+                    child: FilledButton(
+                      onPressed: () {
+                        if (nameController.text.isNotEmpty) {
+                          Navigator.pop(context);
+                          _updateStatus(context, ref, 'completed');
+                        }
+                      },
+                      style: FilledButton.styleFrom(
+                        backgroundColor: const Color(0xFF2E7D32),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(18),
+                        ),
+                        elevation: 0,
                       ),
-                      elevation: 0,
-                    ),
-                    child: const Text(
-                      'CONFIRM DELIVERY',
-                      style: TextStyle(fontWeight: FontWeight.bold),
+                      child: Text(
+                        'COMPLETE DELIVERY',
+                        style: GoogleFonts.outfit(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
                     ),
                   ),
                 ],
               ),
-<<<<<<< HEAD
             );
           },
-=======
-              const SizedBox(height: 32),
-
-              TextField(
-                controller: nameController,
-                style: GoogleFonts.outfit(fontSize: 16),
-                decoration: InputDecoration(
-                  labelText: 'Receiver Name',
-                  labelStyle: GoogleFonts.outfit(color: Colors.grey[600]),
-                  hintText: 'Who received the order?',
-                  hintStyle: GoogleFonts.outfit(color: Colors.grey[400]),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(18),
-                    borderSide: BorderSide(color: Colors.grey[200]!),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(18),
-                    borderSide: BorderSide(color: Colors.grey[200]!),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(18),
-                    borderSide: const BorderSide(color: Color(0xFF2E7D32)),
-                  ),
-                  prefixIcon: const Icon(Icons.person_outline_rounded),
-                  filled: true,
-                  fillColor: Colors.grey[50],
-                ),
-              ),
-              const SizedBox(height: 32),
-
-              OutlinedButton.icon(
-                onPressed: null,
-                icon: const Icon(Icons.camera_rounded, size: 18),
-                label: Text(
-                  'Capture Proof (Coming Soon)',
-                  style: GoogleFonts.outfit(fontWeight: FontWeight.w600),
-                ),
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  side: BorderSide(color: Colors.grey[200]!),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(18),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 32),
-              SizedBox(
-                height: 56,
-                child: FilledButton(
-                  onPressed: () {
-                    if (nameController.text.isNotEmpty) {
-                      Navigator.pop(context);
-                      _updateStatus(context, ref, 'completed');
-                    }
-                  },
-                  style: FilledButton.styleFrom(
-                    backgroundColor: const Color(0xFF2E7D32),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(18),
-                    ),
-                    elevation: 0,
-                  ),
-                  child: Text(
-                    'COMPLETE DELIVERY',
-                    style: GoogleFonts.outfit(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
->>>>>>> camera
         );
       },
     );
@@ -1709,7 +1590,7 @@ class _AvailableOrderCardState extends ConsumerState<_AvailableOrderCard> {
                                   );
                                 }
                               } catch (e) {
-                                if (mounted) {
+                                if (context.mounted) {
                                   setState(() {
                                     _isAccepted = false;
                                     _isLoading = false;
