@@ -7,6 +7,8 @@ import 'package:geolocator/geolocator.dart';
 
 import '../../../food_requests/presentation/providers/active_requests_provider.dart';
 import '../../../food_requests/domain/models/food_request.dart';
+import '../providers/organizations_provider.dart';
+import '../widgets/organization_card.dart';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -19,15 +21,28 @@ class HomeScreen extends ConsumerStatefulWidget {
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   final MapController _mapController = MapController();
+  final TextEditingController _searchController = TextEditingController();
 
   LatLng? _currentPosition;
   bool _isMapReady = false;
   bool _hasMovedToUser = false;
+  String _searchQuery = '';
 
   @override
   void initState() {
     super.initState();
     _checkPermissionsAndGetLocation();
+    _searchController.addListener(() {
+      setState(() {
+        _searchQuery = _searchController.text.toLowerCase();
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   Future<void> _checkPermissionsAndGetLocation() async {
@@ -106,6 +121,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 -0.128928,
               ), // Default to London
               initialZoom: 13.0,
+              interactionOptions: const InteractionOptions(
+                flags: InteractiveFlag.all,
+              ),
               onMapReady: () {
                 _isMapReady = true;
                 _moveToUser();
@@ -136,11 +154,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         data: (requests) {
                           return requests
                               .map((req) {
-                                // Use Org location if available
-                                final lat = req.organization?.latitude;
-                                final long = req.organization?.longitude;
+                                // Use request's own location (from food_requests table)
+                                final lat = req.latitude;
+                                final long = req.longitude;
 
-                                if (lat == null || long == null) return null;
+                                // Skip if location is invalid
+                                if (lat == 0 && long == 0) return null;
 
                                 return Marker(
                                   key: ValueKey(req.id),
@@ -192,8 +211,198 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ],
           ),
 
-          // We can keep the DraggableScrollableSheet for "List View" of requests later if needed
-          // For now, let's just use the BottomSheet on tap
+          // Organization List Sheet
+          DraggableScrollableSheet(
+            initialChildSize: 0.35,
+            minChildSize: 0.18,
+            maxChildSize: 0.8,
+            builder: (context, scrollController) {
+              return Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(20),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 10,
+                      offset: const Offset(0, -5),
+                    ),
+                  ],
+                ),
+                child: CustomScrollView(
+                  controller: scrollController,
+                  slivers: [
+                    SliverToBoxAdapter(
+                      child: Column(
+                        children: [
+                          // Handle bar
+                          Container(
+                            margin: const EdgeInsets.symmetric(vertical: 12),
+                            width: 40,
+                            height: 4,
+                            decoration: BoxDecoration(
+                              color: Colors.grey[300],
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                          ),
+                          // Search bar
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: TextField(
+                              controller: _searchController,
+                              decoration: InputDecoration(
+                                hintText: 'Search organizations...',
+                                prefixIcon: const Icon(Icons.search),
+                                suffixIcon: _searchQuery.isNotEmpty
+                                    ? IconButton(
+                                        icon: const Icon(Icons.clear),
+                                        onPressed: () {
+                                          _searchController.clear();
+                                        },
+                                      )
+                                    : null,
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(
+                                    color: Colors.grey[300]!,
+                                  ),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(
+                                    color: Colors.grey[300]!,
+                                  ),
+                                ),
+                                filled: true,
+                                fillColor: Colors.grey[50],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                        ],
+                      ),
+                    ),
+                    ref
+                        .watch(allOrganizationsProvider)
+                        .when(
+                          data: (organizations) {
+                            final activeRequestsAsync = ref.watch(
+                              activeRequestsProvider,
+                            );
+                            final activeOrgIds =
+                                activeRequestsAsync.asData?.value
+                                    .map((req) => req.orgId)
+                                    .toSet() ??
+                                {};
+
+                            // Filter organizations based on search
+                            final filteredOrgs = organizations.where((org) {
+                              if (_searchQuery.isEmpty) return true;
+                              return org.organizationName
+                                      .toLowerCase()
+                                      .contains(_searchQuery) ||
+                                  org.address.toLowerCase().contains(
+                                    _searchQuery,
+                                  );
+                            }).toList();
+
+                            // Sort: Open first, then closed
+                            filteredOrgs.sort((a, b) {
+                              final aOpen = activeOrgIds.contains(a.id);
+                              final bOpen = activeOrgIds.contains(b.id);
+                              if (aOpen && !bOpen) return -1;
+                              if (!aOpen && bOpen) return 1;
+                              return 0;
+                            });
+
+                            if (filteredOrgs.isEmpty) {
+                              return SliverToBoxAdapter(
+                                child: Padding(
+                                  padding: const EdgeInsets.all(24.0),
+                                  child: Center(
+                                    child: Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        Icon(
+                                          Icons.search_off,
+                                          size: 64,
+                                          color: Colors.grey[400],
+                                        ),
+                                        const SizedBox(height: 16),
+                                        Text(
+                                          'No organizations found',
+                                          style: GoogleFonts.poppins(
+                                            fontSize: 16,
+                                            color: Colors.grey[600],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              );
+                            }
+
+                            return SliverPadding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                              ),
+                              sliver: SliverList(
+                                delegate: SliverChildBuilderDelegate((
+                                  context,
+                                  index,
+                                ) {
+                                  final org = filteredOrgs[index];
+                                  final isOpen = activeOrgIds.contains(org.id);
+
+                                  return OrganizationCard(
+                                    organization: org,
+                                    isOpen: isOpen,
+                                    onTap: () {
+                                      // Move map to organization location if coordinates exist
+                                      if (org.latitude != null &&
+                                          org.longitude != null) {
+                                        _mapController.move(
+                                          LatLng(org.latitude!, org.longitude!),
+                                          15.0,
+                                        );
+                                      }
+                                    },
+                                  );
+                                }, childCount: filteredOrgs.length),
+                              ),
+                            );
+                          },
+                          error: (err, stack) => SliverToBoxAdapter(
+                            child: Center(
+                              child: Text('Error loading organizations: $err'),
+                            ),
+                          ),
+                          loading: () => const SliverToBoxAdapter(
+                            child: Center(child: CircularProgressIndicator()),
+                          ),
+                        ),
+                  ],
+                ),
+              );
+            },
+          ),
+
+          // Recenter Button
+          Positioned(
+            bottom: 180,
+            right: 16,
+            child: FloatingActionButton(
+              heroTag: 'recenter',
+              mini: true,
+              backgroundColor: Colors.white,
+              onPressed: _moveToUser,
+              child: const Icon(Icons.my_location, color: Colors.black87),
+            ),
+          ),
         ],
       ),
     );
@@ -281,19 +490,48 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       // Let's add standard Supabase update here for speed or refactor repo in next step.
       // I'll update it directly here for now to verify, but ideally Repo should handle it.
 
+      // 3. Find and Assign Rider (Simulation)
+      // Query "rider_profiles" where is_available = true
+      final availableRiders = await Supabase.instance.client
+          .from('rider_profiles')
+          .select()
+          .eq('is_available', true)
+          .limit(1);
+
+      String? assignedRiderId;
+      if (availableRiders.isNotEmpty) {
+        assignedRiderId = availableRiders.first['id'] as String;
+      }
+
+      // 4. Update Status and Assign Rider
       await Supabase.instance.client
           .from('food_requests')
-          .update({'status': 'pending_pickup', 'donor_id': user.id})
+          .update({
+            'status': 'pending_pickup',
+            'donor_id': user.id,
+            'rider_id': assignedRiderId, // Can be null if no riders available
+          })
           .eq('id', req.id);
 
-      // 4. Refresh List
+      // If rider assigned, set them to unavailable (optional, but good for demo)
+      if (assignedRiderId != null) {
+        // await Supabase.instance.client.from('rider_profiles').update({
+        //   'is_available': false,
+        // }).eq('id', assignedRiderId);
+        // Keeping them available for simplicity in demo
+      }
+
+      // 5. Refresh List
       // ignore: unused_result
       ref.refresh(activeRequestsProvider);
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Thank you! Pickup scheduled.')),
-        );
+        final msg = assignedRiderId != null
+            ? 'Thank you! Rider assigned.'
+            : 'Thank you! Searching for a rider...';
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(msg)));
       }
     } catch (e) {
       if (mounted) {

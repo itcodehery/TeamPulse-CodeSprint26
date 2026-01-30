@@ -5,7 +5,6 @@ import 'package:go_router/go_router.dart';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../data/repositories/auth_repository.dart';
-import '../../data/repositories/organization_repository.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -43,24 +42,37 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       final authRepo = ref.read(authRepositoryProvider);
 
       // 1. Sign In
-      await authRepo.signInWithEmail(email, password);
-
-      // 2. Determine User Role for Routing
-      // We need the user ID to check profiles
+      await authRepo.signInWithEmail(
+        email: _emailController.text.trim(),
+        password: _passwordController.text.trim(),
+      );
       final user = Supabase.instance.client.auth.currentUser;
       if (user == null) throw Exception('Login succeeded but user is null');
 
-      // Check if Organization
-      final orgRepo = ref.read(organizationRepositoryProvider);
-      final orgProfile = await orgRepo.getProfile(user.id);
+      // 2. Fetch User Type from 'profiles'
+      final profileResponse = await Supabase.instance.client
+          .from('profiles')
+          .select('user_type')
+          .eq('id', user.id)
+          .maybeSingle();
 
       if (mounted) {
-        if (orgProfile != null) {
+        if (profileResponse == null) {
+          // Handle case where auth user exists but no profile (edge case)
+          // Maybe route to a "Complete Profile" screen? For now assuming Organization.
           context.go('/organization-home');
         } else {
-          // Assume Donor/Rider for now, or check other profiles if they existed
-          // Defaulting to standard home
-          context.go('/home');
+          final userType = profileResponse['user_type'] as String;
+          if (userType == 'organization') {
+            context.go('/organization-home');
+          } else if (userType == 'donor') {
+            context.go('/home'); // Donor Home
+          } else if (userType == 'rider') {
+            // TODO: Implement Rider Home
+            context.go('/home'); // Placeholder
+          } else {
+            context.go('/home');
+          }
         }
       }
     } on AuthException catch (e) {

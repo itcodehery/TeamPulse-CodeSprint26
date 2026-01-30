@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 import '../../../../core/widgets/location_picker_screen.dart';
+import '../../data/repositories/auth_repository.dart';
+import '../../data/repositories/rider_repository.dart';
+import '../../domain/models/rider_profile.dart';
+import 'package:go_router/go_router.dart';
 
 class RiderRegistrationScreen extends ConsumerStatefulWidget {
   const RiderRegistrationScreen({super.key});
@@ -15,14 +19,18 @@ class _RiderRegistrationScreenState
     extends ConsumerState<RiderRegistrationScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
-  final _vehicleTypeController =
-      TextEditingController(); // Could be dropdown: Bike, Car, Van
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _vehicleTypeController = TextEditingController();
   final _vehicleNumberController = TextEditingController();
+  bool _isLoading = false;
   LatLng? _selectedLocation; // Initial location
 
   @override
   void dispose() {
     _nameController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
     _vehicleTypeController.dispose();
     _vehicleNumberController.dispose();
     super.dispose();
@@ -39,10 +47,8 @@ class _RiderRegistrationScreenState
     }
   }
 
-  void _submit() {
+  Future<void> _submit() async {
     if (_formKey.currentState!.validate()) {
-      // Riders might not strictly need a static location, but good to have initial
-      // If the user wants location picker for everyone, we include it.
       if (_selectedLocation == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -54,9 +60,53 @@ class _RiderRegistrationScreenState
         return;
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Processing Rider Registration...')),
-      );
+      setState(() => _isLoading = true);
+
+      try {
+        final authRepo = ref.read(authRepositoryProvider);
+        final riderRepo = ref.read(riderRepositoryProvider);
+
+        // 1. Sign Up (Auth)
+        final userId = await authRepo.signUpWithEmail(
+          email: _emailController.text.trim(),
+          password: _passwordController.text.trim(),
+        );
+
+        if (userId == null) {
+          throw Exception('Registration failed: User ID is null');
+        }
+
+        // 2. Create Profile & Rider Profile (DB)
+        final riderProfile = RiderProfile(
+          id: userId,
+          vehicleType: _vehicleTypeController.text.trim(),
+          vehicleNumber: _vehicleNumberController.text.trim(),
+          currentLatitude: _selectedLocation!.latitude,
+          currentLongitude: _selectedLocation!.longitude,
+          isAvailable: true, // Default to available on signup ? or false.
+        );
+
+        await riderRepo.createProfile(
+          riderProfile: riderProfile,
+          email: _emailController.text.trim(),
+          name: _nameController.text.trim(),
+        );
+
+        if (mounted) {
+          // Navigate to Home
+          context.go('/home');
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Error: $e')));
+        }
+      } finally {
+        if (mounted) {
+          setState(() => _isLoading = false);
+        }
+      }
     }
   }
 
@@ -80,6 +130,31 @@ class _RiderRegistrationScreenState
                 ),
                 validator: (value) => value == null || value.isEmpty
                     ? 'Please enter your name'
+                    : null,
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _emailController,
+                decoration: const InputDecoration(
+                  labelText: 'Email',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.email_outlined),
+                ),
+                validator: (value) => value == null || value.isEmpty
+                    ? 'Please enter your email'
+                    : null,
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _passwordController,
+                decoration: const InputDecoration(
+                  labelText: 'Password',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.lock_outline),
+                ),
+                obscureText: true,
+                validator: (value) => value == null || value.length < 6
+                    ? 'Password must be at least 6 characters'
                     : null,
               ),
               const SizedBox(height: 16),
@@ -138,11 +213,13 @@ class _RiderRegistrationScreenState
 
               const SizedBox(height: 32),
               FilledButton(
-                onPressed: _submit,
+                onPressed: _isLoading ? null : _submit,
                 style: FilledButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
-                child: const Text('Complete Registration'),
+                child: _isLoading
+                    ? const CircularProgressIndicator()
+                    : const Text('Complete Registration'),
               ),
             ],
           ),

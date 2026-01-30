@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+
 import '../../../../core/widgets/location_picker_screen.dart';
 import '../../data/repositories/auth_repository.dart';
 import '../../data/repositories/organization_repository.dart';
@@ -67,20 +67,17 @@ class _OrganizationRegistrationScreenState
         final orgRepo = ref.read(organizationRepositoryProvider);
 
         // 1. Sign Up
-        await authRepo.signUpWithEmail(
-          _emailController.text.trim(),
-          _passwordController.text,
+        final userId = await authRepo.signUpWithEmail(
+          email: _emailController.text.trim(),
+          password: _passwordController.text.trim(),
         );
 
-        // 2. Get User ID (Assuming auto-login or retrieving current session)
-        // Wait a bit for session to established if needed, or get user from repo
-        // Supabase usually signs in after signup automatically
-        final user = Supabase.instance.client.auth.currentUser;
-        if (user == null) throw Exception('User creation failed');
-
-        // 3. Create Profile
+        if (userId == null) {
+          throw Exception('Registration failed: User ID is null');
+        }
+        // 2. Create Profile
         final profile = OrganizationProfile(
-          id: user.id,
+          id: userId,
           organizationName: _nameController.text.trim(),
           organizationType: _selectedType,
           address: _addressController.text.trim(),

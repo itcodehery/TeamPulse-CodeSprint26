@@ -11,11 +11,13 @@ Future<void> main() async {
 
   await dotenv.load(fileName: ".env");
 
-  // Initialize Supabase
-  // Initialize Supabase
+  // Initialize Supabase with auth persistence
   await Supabase.initialize(
     url: SupabaseConstants.supabaseUrl,
     anonKey: SupabaseConstants.supabaseAnonKey,
+    authOptions: const FlutterAuthClientOptions(
+      authFlowType: AuthFlowType.pkce,
+    ),
   );
 
   runApp(const ProviderScope(child: MyApp()));

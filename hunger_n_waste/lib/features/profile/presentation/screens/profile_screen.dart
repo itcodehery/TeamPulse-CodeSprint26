@@ -132,12 +132,12 @@ class ProfileScreen extends ConsumerWidget {
                   _buildInfoRow(
                     Icons.directions_bike,
                     'Vehicle',
-                    authState.riderProfile!.vehicleType,
+                    authState.riderProfile!.vehicleType ?? 'N/A',
                   ),
                   _buildInfoRow(
                     Icons.confirmation_number,
                     'Plate Number',
-                    authState.riderProfile!.vehicleNumber,
+                    authState.riderProfile!.vehicleNumber ?? 'N/A',
                   ),
                   _buildInfoRow(
                     Icons.circle,
