@@ -33,25 +33,46 @@ class FoodRequest {
   });
 
   factory FoodRequest.fromJson(Map<String, dynamic> json) {
-    return FoodRequest(
-      id: json['id'] as String,
-      orgId: json['org_id'] as String,
-      foodType: json['food_type'] as String,
-      quantity: json['quantity'] as int,
-      status: FoodRequestStatus.values.firstWhere(
-        (e) => e.name == _snakeToCamel(json['status'] as String),
-        orElse: () => FoodRequestStatus.open,
-      ),
-      donorId: json['donor_id'] as String?,
-      riderId: json['rider_id'] as String?,
-      createdAt: DateTime.parse(json['created_at'] as String),
-      updatedAt: DateTime.parse(json['updated_at'] as String),
-      organization: json['organization_profiles'] != null
-          ? OrganizationProfile.fromJson(json['organization_profiles'])
-          : null,
-      latitude: (json['latitude'] as num).toDouble(),
-      longitude: (json['longitude'] as num).toDouble(),
+    print('🔵 [FoodRequest.fromJson] Parsing JSON: $json');
+    print(
+      '🔵 [FoodRequest.fromJson] ID: ${json['id']} (type: ${json['id'].runtimeType})',
     );
+    print(
+      '🔵 [FoodRequest.fromJson] org_id: ${json['org_id']} (type: ${json['org_id']?.runtimeType})',
+    );
+    print(
+      '🔵 [FoodRequest.fromJson] status: ${json['status']} (type: ${json['status']?.runtimeType})',
+    );
+
+    try {
+      return FoodRequest(
+        id: json['id'] as String? ?? '',
+        orgId: json['org_id'] as String? ?? '',
+        foodType: json['food_type'] as String? ?? 'Unknown',
+        quantity: json['quantity'] as int? ?? 0,
+        status: FoodRequestStatus.values.firstWhere(
+          (e) => e.name == _snakeToCamel(json['status'] as String? ?? 'open'),
+          orElse: () => FoodRequestStatus.open,
+        ),
+        donorId: json['donor_id'] as String?,
+        riderId: json['rider_id'] as String?,
+        createdAt: json['created_at'] != null
+            ? DateTime.parse(json['created_at'] as String)
+            : DateTime.now(),
+        updatedAt: json['updated_at'] != null
+            ? DateTime.parse(json['updated_at'] as String)
+            : DateTime.now(),
+        organization: json['organization_profiles'] != null
+            ? OrganizationProfile.fromJson(json['organization_profiles'])
+            : null,
+        latitude: (json['latitude'] as num?)?.toDouble() ?? 0.0,
+        longitude: (json['longitude'] as num?)?.toDouble() ?? 0.0,
+      );
+    } catch (e, stackTrace) {
+      print('🔴 [FoodRequest.fromJson] ERROR: $e');
+      print('🔴 [FoodRequest.fromJson] Stack trace: $stackTrace');
+      rethrow;
+    }
   }
 
   Map<String, dynamic> toJson() {

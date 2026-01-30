@@ -9,10 +9,7 @@ import '../../../food_requests/presentation/providers/active_requests_provider.d
 import '../../../food_requests/domain/models/food_request.dart';
 import '../providers/organizations_provider.dart';
 import '../widgets/organization_card.dart';
-import '../../../../core/widgets/location_picker_screen.dart';
-
-import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../../food_requests/data/repositories/food_request_repository.dart';
+import 'delivery_options_screen.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -624,15 +621,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       height: 58,
                       child: FilledButton(
                         style: FilledButton.styleFrom(
-                          backgroundColor:
-                              Colors.black, // High contrast, professional
+                          backgroundColor: Theme.of(context).primaryColor,
                           foregroundColor: Colors.white,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16),
                           ),
                           elevation: 0,
                         ),
-                        onPressed: () => _showLocationPickerDialog(req),
+                        onPressed: () {
+                          Navigator.of(context).pop(); // Close modal
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  DeliveryOptionsScreen(request: req),
+                            ),
+                          );
+                        },
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
@@ -657,109 +661,5 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         );
       },
     );
-  }
-
-  Future<void> _showLocationPickerDialog(FoodRequest req) async {
-    final result = await showDialog<String>(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Pickup Location'),
-          content: const Text('Where should the rider pick up the donation?'),
-          actions: [
-            TextButton.icon(
-              onPressed: () => Navigator.of(context).pop('current'),
-              icon: const Icon(Icons.my_location),
-              label: const Text('Use Current Location'),
-            ),
-            TextButton.icon(
-              onPressed: () => Navigator.of(context).pop('select'),
-              icon: const Icon(Icons.map),
-              label: const Text('Select on Map'),
-            ),
-          ],
-        );
-      },
-    );
-
-    if (result == null) return; // User cancelled
-
-    LatLng? pickupLocation;
-
-    if (result == 'current') {
-      // Use current location
-      if (_currentPosition == null) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                'Current location not available. Please enable GPS.',
-              ),
-            ),
-          );
-        }
-        return;
-      }
-      pickupLocation = _currentPosition;
-    } else if (result == 'select') {
-      // Navigate to location picker screen
-      final selectedLocation = await Navigator.of(context).push<LatLng>(
-        MaterialPageRoute(builder: (context) => const LocationPickerScreen()),
-      );
-
-      if (selectedLocation == null) return; // User cancelled
-      pickupLocation = selectedLocation;
-    }
-
-    if (pickupLocation != null) {
-      await _donateAndFulfill(req, pickupLocation);
-    }
-  }
-
-  Future<void> _donateAndFulfill(FoodRequest req, LatLng pickupLocation) async {
-    // 1. Check Auth logic (assuming already logged in)
-    final user = Supabase.instance.client.auth.currentUser;
-    if (user == null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Please log in')));
-      return;
-    }
-
-    // 2. Optimistic Update / Loader
-    Navigator.pop(context); // Close sheet
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Processing donation...')));
-
-    try {
-      // 3. Use Repository to fulfill request
-      // TODO: Update this to pass the pickup location to the repository
-      await ref
-          .read(foodRequestRepositoryProvider)
-          .fulfillRequest(
-            requestId: req.id,
-            donorId: user.id,
-            pickupLocation: pickupLocation,
-          );
-
-      // 4. Refresh List
-      // ignore: unused_result
-      ref.refresh(activeRequestsProvider);
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Thank you! Donation confirmed & Rider assigned.'),
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error: $e')));
-      }
-    }
   }
 }
