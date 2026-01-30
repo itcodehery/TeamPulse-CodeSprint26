@@ -25,7 +25,6 @@ class UniversalHomeScreen extends ConsumerWidget {
       case UserType.rider:
         return const RiderHomeScreen();
       case UserType.donor:
-      default:
         return const HomeScreen();
     }
   }
