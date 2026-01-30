@@ -150,24 +150,8 @@ class ProfileScreen extends ConsumerWidget {
               ),
 
             const SizedBox(height: 20),
+
             // Debug buttons to switch profiles
-            const Divider(),
-            const Text("Debug: Switch User Type"),
-            Wrap(
-              spacing: 10,
-              children: [
-                OutlinedButton(
-                  onPressed: () =>
-                      ref.read(authProvider.notifier).loginAsOrganization(),
-                  child: const Text("Org"),
-                ),
-                OutlinedButton(
-                  onPressed: () =>
-                      ref.read(authProvider.notifier).loginAsRider(),
-                  child: const Text("Rider"),
-                ),
-              ],
-            ),
           ],
         ),
       ),

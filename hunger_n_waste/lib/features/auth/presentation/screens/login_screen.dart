@@ -46,35 +46,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
       );
-      final user = Supabase.instance.client.auth.currentUser;
-      if (user == null) throw Exception('Login succeeded but user is null');
 
-      // 2. Fetch User Type from 'profiles'
-      final profileResponse = await Supabase.instance.client
-          .from('profiles')
-          .select('user_type')
-          .eq('id', user.id)
-          .maybeSingle();
-
-      if (mounted) {
-        if (profileResponse == null) {
-          // Handle case where auth user exists but no profile (edge case)
-          // Maybe route to a "Complete Profile" screen? For now assuming Organization.
-          context.go('/organization-home');
-        } else {
-          final userType = profileResponse['user_type'] as String;
-          if (userType == 'organization') {
-            context.go('/organization-home');
-          } else if (userType == 'donor') {
-            context.go('/home'); // Donor Home
-          } else if (userType == 'rider') {
-            // TODO: Implement Rider Home
-            context.go('/home'); // Placeholder
-          } else {
-            context.go('/home');
-          }
-        }
-      }
+      // No manual navigation here.
+      // The AppRouter listens to auth state changes and will redirect accordingly.
     } on AuthException catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(

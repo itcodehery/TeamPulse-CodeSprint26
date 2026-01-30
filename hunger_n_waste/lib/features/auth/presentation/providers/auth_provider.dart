@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 import '../../domain/models/app_user.dart';
 import '../../domain/models/donor_profile.dart';
 import '../../domain/models/organization_profile.dart';
@@ -40,88 +42,103 @@ class AuthState {
 class AuthNotifier extends Notifier<AuthState> {
   @override
   AuthState build() {
-    // Simulate initial login for testing (Mock Data)
-    // We can't call methods in build easily without side effects,
-    // so we return the initial state directly.
-    return AuthState(
-      user: AppUser(
-        id: 'user_1',
-        email: 'donor@example.com',
-        name: 'John Doe',
-        phoneNumber: '+91 9876543210',
-        userType: UserType.donor,
-        createdAt: DateTime.now(),
-      ),
-      donorProfile: const DonorProfile(
-        id: 'user_1',
-        defaultAddress: '123 Green Street, Mumbai',
-        defaultLatitude: 19.0760,
-        defaultLongitude: 72.8777,
-      ),
-    );
+    // Start listening to auth changes
+    final authSubscription = supabase
+        .Supabase
+        .instance
+        .client
+        .auth
+        .onAuthStateChange
+        .listen((data) {
+          final session = data.session;
+          if (session != null) {
+            _loadUserData(session.user.id);
+          } else {
+            state = const AuthState();
+          }
+        });
+
+    ref.onDispose(() {
+      authSubscription.cancel();
+    });
+
+    // Check if checks are already signed in
+    final currentUser = supabase.Supabase.instance.client.auth.currentUser;
+    if (currentUser != null) {
+      _loadUserData(currentUser.id);
+      return const AuthState(isLoading: true);
+    }
+
+    return const AuthState();
   }
 
-  void loginAsDonor() {
-    state = AuthState(
-      user: AppUser(
-        id: 'user_1',
-        email: 'donor@example.com',
-        name: 'John Doe',
-        phoneNumber: '+91 9876543210',
-        userType: UserType.donor,
-        createdAt: DateTime.now(),
-      ),
-      donorProfile: const DonorProfile(
-        id: 'user_1',
-        defaultAddress: '123 Green Street, Mumbai',
-        defaultLatitude: 19.0760,
-        defaultLongitude: 72.8777,
-      ),
-    );
+  // Dispose subscription when the provider is destroyed?
+  // Riverpod Notifier doesn't have a dispose method we can override easily for cleanup
+  // typically, but keepAlive providers are long lived.
+  // For simplicity we let it run. In a robust app we might use ref.onDispose.
+
+  Future<void> _loadUserData(String userId) async {
+    state = state.copyWith(isLoading: true);
+    try {
+      final client = supabase.Supabase.instance.client;
+
+      // 1. Fetch Basic Profile
+      final profileData = await client
+          .from('profiles')
+          .select()
+          .eq('id', userId)
+          .single();
+
+      final appUser = AppUser.fromJson(profileData);
+
+      DonorProfile? donorProfile;
+      OrganizationProfile? orgProfile;
+      RiderProfile? riderProfile;
+
+      // 2. Fetch Specific Profile based on Type
+      switch (appUser.userType) {
+        case UserType.donor:
+          final dData = await client
+              .from('donor_profiles')
+              .select()
+              .eq('id', userId)
+              .maybeSingle();
+          if (dData != null) donorProfile = DonorProfile.fromJson(dData);
+          break;
+        case UserType.organization:
+          final oData = await client
+              .from('organization_profiles')
+              .select()
+              .eq('id', userId)
+              .maybeSingle();
+          if (oData != null) orgProfile = OrganizationProfile.fromJson(oData);
+          break;
+        case UserType.rider:
+          final rData = await client
+              .from('rider_profiles')
+              .select()
+              .eq('id', userId)
+              .maybeSingle();
+          if (rData != null) riderProfile = RiderProfile.fromJson(rData);
+          break;
+      }
+
+      state = AuthState(
+        user: appUser,
+        donorProfile: donorProfile,
+        organizationProfile: orgProfile,
+        riderProfile: riderProfile,
+        isLoading: false,
+      );
+    } catch (e) {
+      // In case of error (e.g. network), we might want to sign out or show error
+      state = const AuthState(isLoading: false);
+      print('Error loading user data: $e');
+    }
   }
 
-  void loginAsOrganization() {
-    state = AuthState(
-      user: AppUser(
-        id: 'org_1',
-        email: 'help@ngo.org',
-        name: 'Helping Hands',
-        phoneNumber: '+91 9998887776',
-        userType: UserType.organization,
-        createdAt: DateTime.now(),
-      ),
-      organizationProfile: const OrganizationProfile(
-        id: 'org_1',
-        organizationName: 'Helping Hands Foundation',
-        organizationType: OrganizationType.ngo,
-        address: '45 Charity Lane, Delhi',
-        isVerified: true,
-        latitude: 28.6139,
-        longitude: 77.2090,
-      ),
-    );
-  }
-
-  void loginAsRider() {
-    state = AuthState(
-      user: AppUser(
-        id: 'rider_1',
-        email: 'rider@delivery.com',
-        name: 'Speedy Singh',
-        phoneNumber: '+91 7776665554',
-        userType: UserType.rider,
-        createdAt: DateTime.now(),
-      ),
-      riderProfile: const RiderProfile(
-        id: 'rider_1',
-        vehicleType: 'Bike',
-        vehicleNumber: 'KA-01-AB-1234',
-        isAvailable: true,
-      ),
-    );
-  }
-
-  void logout() {
+  Future<void> logout() async {
+    await supabase.Supabase.instance.client.auth.signOut();
     state = const AuthState();
   }
 }
