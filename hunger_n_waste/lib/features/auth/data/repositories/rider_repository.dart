@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../domain/models/rider_profile.dart';
@@ -40,20 +41,37 @@ class RiderRepository {
   }
 
   Future<void> updateAvailability(String id, bool isAvailable) async {
-    await _client
-        .from('rider_profiles')
-        .update({'is_available': isAvailable})
-        .eq('id', id);
+    try {
+      debugPrint(
+        '🔄 Updating rider availability: id=$id, isAvailable=$isAvailable',
+      );
+
+      final response = await _client
+          .from('rider_profiles')
+          .update({'is_available': isAvailable})
+          .eq('id', id)
+          .select();
+
+      debugPrint('✅ Availability update successful: $response');
+    } catch (e, stackTrace) {
+      debugPrint('❌ Error updating availability: $e');
+      debugPrint('Stack trace: $stackTrace');
+      rethrow;
+    }
   }
 
   Stream<RiderProfile?> watchProfile(String id) {
+    debugPrint('📡 Setting up stream for rider: $id');
     return _client
         .from('rider_profiles')
         .stream(primaryKey: ['id'])
         .eq('id', id)
         .map((event) {
+          debugPrint('📨 Stream received update: $event');
           if (event.isEmpty) return null;
-          return RiderProfile.fromJson(event.first);
+          final profile = RiderProfile.fromJson(event.first);
+          debugPrint('🔄 Parsed profile - isAvailable: ${profile.isAvailable}');
+          return profile;
         });
   }
 

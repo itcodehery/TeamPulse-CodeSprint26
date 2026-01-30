@@ -32,6 +32,7 @@ class MyApp extends ConsumerWidget {
 
     return MaterialApp.router(
       title: 'Hunger n Waste',
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.green),
         useMaterial3: true,

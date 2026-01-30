@@ -98,17 +98,54 @@ class _RiderDashboardContent extends ConsumerWidget {
                     color: isAvailable ? Colors.green[800] : Colors.grey[700],
                   ),
                 ),
-                subtitle: const Text('Accepting deliveries'),
+                subtitle: Text(
+                  isAvailable
+                      ? 'Accepting deliveries'
+                      : 'Not accepting deliveries',
+                ),
                 secondary: Icon(
                   isAvailable ? Icons.check_circle : Icons.pause_circle_filled,
                   color: isAvailable ? Colors.green : Colors.grey,
                   size: 32,
                 ),
                 value: isAvailable,
-                onChanged: (val) {
-                  ref
-                      .read(riderRepositoryProvider)
-                      .updateAvailability(profile.id, val);
+                onChanged: (val) async {
+                  try {
+                    debugPrint('🎯 Toggle switched to: $val');
+                    await ref
+                        .read(riderRepositoryProvider)
+                        .updateAvailability(profile.id, val);
+
+                    // Force refresh the stream provider to get updated data
+                    debugPrint(
+                      '🔄 Invalidating profile provider to force refresh',
+                    );
+                    ref.invalidate(riderProfileStreamProvider);
+
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            val ? 'You are now ONLINE' : 'You are now OFFLINE',
+                          ),
+                          duration: const Duration(seconds: 2),
+                          backgroundColor: val
+                              ? Colors.green
+                              : Colors.grey[700],
+                        ),
+                      );
+                    }
+                  } catch (e) {
+                    debugPrint('🚨 Error in toggle: $e');
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Failed to update status: $e'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
+                  }
                 },
               ),
             ),
