@@ -9,6 +9,7 @@ import '../../../auth/data/repositories/rider_repository.dart';
 import '../../../auth/data/repositories/donor_repository.dart';
 import '../../../auth/data/repositories/organization_repository.dart';
 import '../../../food_requests/data/repositories/food_request_repository.dart';
+import 'package:vibration/vibration.dart';
 import '../../../auth/domain/models/rider_profile.dart';
 import '../../../food_requests/domain/models/food_request.dart';
 import '../../../../core/services/notification_service.dart';
@@ -187,6 +188,9 @@ class _RiderDashboardContentState
                     '${order.foodType} - ${order.quantity} servings from ${order.organization?.organizationName ?? "nearby"}',
                 payload: order.id,
               );
+
+              // Buzz for 5 seconds
+              Vibration.vibrate(duration: 5000);
             }
           }
         }
