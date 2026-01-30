@@ -56,7 +56,7 @@ class _DonorRegistrationScreenState
     return Scaffold(
       appBar: AppBar(title: const Text('Donor Registration')),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(24.0),
         child: Form(
           key: _formKey,
           child: Column(
@@ -64,7 +64,11 @@ class _DonorRegistrationScreenState
             children: [
               TextFormField(
                 controller: _nameController,
-                decoration: const InputDecoration(labelText: 'Full Name'),
+                decoration: const InputDecoration(
+                  labelText: 'Full Name',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.person_outline),
+                ),
                 validator: (value) => value == null || value.isEmpty
                     ? 'Please enter your name'
                     : null,
@@ -72,26 +76,51 @@ class _DonorRegistrationScreenState
               const SizedBox(height: 16),
               TextFormField(
                 controller: _addressController,
-                decoration: const InputDecoration(labelText: 'Default Address'),
+                decoration: const InputDecoration(
+                  labelText: 'Default Address',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.home_outlined),
+                ),
                 validator: (value) => value == null || value.isEmpty
                     ? 'Please enter your address'
                     : null,
               ),
-              const SizedBox(height: 16),
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                title: Text(
+              const SizedBox(height: 24),
+
+              // Location Picker
+              OutlinedButton.icon(
+                onPressed: _pickLocation,
+                icon: Icon(
+                  _selectedLocation == null
+                      ? Icons.add_location_alt
+                      : Icons.check_circle,
+                  color: _selectedLocation == null ? null : Colors.green,
+                ),
+                label: Text(
                   _selectedLocation == null
                       ? 'Pick Location on Map'
-                      : 'Location Selected: ${_selectedLocation!.latitude.toStringAsFixed(4)}, ${_selectedLocation!.longitude.toStringAsFixed(4)}',
+                      : 'Location Selected (${_selectedLocation!.latitude.toStringAsFixed(4)}, ${_selectedLocation!.longitude.toStringAsFixed(4)})',
                 ),
-                trailing: const Icon(Icons.map),
-                onTap: _pickLocation,
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                ),
               ),
-              const Divider(),
-              const SizedBox(height: 24),
-              ElevatedButton(
+              if (_selectedLocation != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8.0),
+                  child: Text(
+                    'Tap to change location',
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ),
+
+              const SizedBox(height: 32),
+              FilledButton(
                 onPressed: _submit,
+                style: FilledButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                ),
                 child: const Text('Complete Registration'),
               ),
             ],

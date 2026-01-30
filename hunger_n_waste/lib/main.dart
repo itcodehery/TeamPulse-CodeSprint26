@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'core/constants/supabase_constants.dart';
 import 'router/app_router.dart';
 
@@ -32,6 +33,7 @@ class MyApp extends ConsumerWidget {
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.green),
         useMaterial3: true,
+        textTheme: GoogleFonts.robotoTextTheme(),
       ),
       routerConfig: router,
     );

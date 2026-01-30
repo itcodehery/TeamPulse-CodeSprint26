@@ -62,7 +62,7 @@ class _OrganizationRegistrationScreenState
     return Scaffold(
       appBar: AppBar(title: const Text('Organization Registration')),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(24.0),
         child: Form(
           key: _formKey,
           child: Column(
@@ -72,6 +72,8 @@ class _OrganizationRegistrationScreenState
                 controller: _nameController,
                 decoration: const InputDecoration(
                   labelText: 'Organization Name',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.business),
                 ),
                 validator: (value) => value == null || value.isEmpty
                     ? 'Please enter organization name'
@@ -82,6 +84,8 @@ class _OrganizationRegistrationScreenState
                 value: _selectedType,
                 decoration: const InputDecoration(
                   labelText: 'Organization Type',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.category),
                 ),
                 items: OrganizationType.values.map((type) {
                   return DropdownMenuItem(
@@ -96,7 +100,11 @@ class _OrganizationRegistrationScreenState
               const SizedBox(height: 16),
               TextFormField(
                 controller: _addressController,
-                decoration: const InputDecoration(labelText: 'Address'),
+                decoration: const InputDecoration(
+                  labelText: 'Address',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.location_on_outlined),
+                ),
                 validator: (value) => value == null || value.isEmpty
                     ? 'Please enter address'
                     : null,
@@ -106,23 +114,46 @@ class _OrganizationRegistrationScreenState
                 controller: _licenseController,
                 decoration: const InputDecoration(
                   labelText: 'License Number (Optional)',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.badge_outlined),
                 ),
               ),
-              const SizedBox(height: 16),
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                title: Text(
+              const SizedBox(height: 24),
+
+              // Location Picker
+              OutlinedButton.icon(
+                onPressed: _pickLocation,
+                icon: Icon(
+                  _selectedLocation == null
+                      ? Icons.add_location_alt
+                      : Icons.check_circle,
+                  color: _selectedLocation == null ? null : Colors.green,
+                ),
+                label: Text(
                   _selectedLocation == null
                       ? 'Pick Location on Map'
-                      : 'Location Selected: ${_selectedLocation!.latitude.toStringAsFixed(4)}, ${_selectedLocation!.longitude.toStringAsFixed(4)}',
+                      : 'Location Selected (${_selectedLocation!.latitude.toStringAsFixed(4)}, ${_selectedLocation!.longitude.toStringAsFixed(4)})',
                 ),
-                trailing: const Icon(Icons.map),
-                onTap: _pickLocation,
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                ),
               ),
-              const Divider(),
-              const SizedBox(height: 24),
-              ElevatedButton(
+              if (_selectedLocation != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8.0),
+                  child: Text(
+                    'Tap to change location',
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ),
+
+              const SizedBox(height: 32),
+              FilledButton(
                 onPressed: _submit,
+                style: FilledButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                ),
                 child: const Text('Complete Registration'),
               ),
             ],
