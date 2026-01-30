@@ -13,11 +13,19 @@ class DonorContributionsScreen extends ConsumerWidget {
     final contributionsAsync = ref.watch(donorContributionsProvider);
 
     return Scaffold(
+      backgroundColor: const Color(0xFFF9F9F9),
       appBar: AppBar(
         title: Text(
           'Your Contributions',
-          style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+          style: GoogleFonts.outfit(
+            fontWeight: FontWeight.bold,
+            fontSize: 24,
+            color: Colors.black87,
+          ),
         ),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: Colors.black87),
       ),
       body: contributionsAsync.when(
         data: (requests) {
@@ -26,16 +34,16 @@ class DonorContributionsScreen extends ConsumerWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(
-                    Icons.volunteer_activism_outlined,
+                  Icon(
+                    Icons.volunteer_activism_rounded,
                     size: 64,
-                    color: Colors.grey,
+                    color: Colors.grey[300],
                   ),
                   const SizedBox(height: 16),
                   Text(
                     'No contributions yet',
-                    style: GoogleFonts.poppins(
-                      color: Colors.grey,
+                    style: GoogleFonts.outfit(
+                      color: Colors.grey[500],
                       fontSize: 16,
                     ),
                   ),
@@ -44,86 +52,115 @@ class DonorContributionsScreen extends ConsumerWidget {
             );
           }
           return ListView.builder(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             itemCount: requests.length,
             itemBuilder: (context, index) {
               final req = requests[index];
-              return Card(
-                margin: const EdgeInsets.only(bottom: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+              final statusColor = _getStatusColor(req.status);
+
+              return Container(
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.03),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
                 child: Padding(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(20),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(
-                            req.foodType,
-                            style: GoogleFonts.poppins(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
+                          Expanded(
+                            child: Text(
+                              req.foodType,
+                              style: GoogleFonts.outfit(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black87,
+                              ),
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                           Container(
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
+                              horizontal: 10,
+                              vertical: 6,
                             ),
                             decoration: BoxDecoration(
-                              color: _getStatusColor(
-                                req.status,
-                              ).withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(8),
+                              color: statusColor.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(100),
                             ),
                             child: Text(
-                              req.statusDisplayString,
-                              style: TextStyle(
-                                color: _getStatusColor(req.status),
-                                fontSize: 12,
+                              req.statusDisplayString.toUpperCase(),
+                              style: GoogleFonts.outfit(
+                                fontSize: 10,
                                 fontWeight: FontWeight.bold,
+                                color: statusColor,
                               ),
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 16),
                       Row(
                         children: [
-                          const Icon(
-                            Icons.people_outline,
+                          Icon(
+                            Icons.people_outline_rounded,
                             size: 16,
-                            color: Colors.grey,
+                            color: Colors.grey[400],
                           ),
-                          const SizedBox(width: 4),
-                          Text('${req.quantity} people fed'),
+                          const SizedBox(width: 8),
+                          Text(
+                            '${req.quantity} people fed',
+                            style: GoogleFonts.outfit(
+                              fontSize: 14,
+                              color: Colors.grey[600],
+                            ),
+                          ),
                         ],
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 8),
                       if (req.organization != null)
                         Row(
                           children: [
-                            const Icon(
-                              Icons.business,
+                            Icon(
+                              Icons.business_rounded,
                               size: 16,
-                              color: Colors.grey,
+                              color: Colors.grey[400],
                             ),
-                            const SizedBox(width: 4),
+                            const SizedBox(width: 8),
                             Expanded(
                               child: Text(
                                 req.organization!.organizationName,
+                                style: GoogleFonts.outfit(
+                                  fontSize: 14,
+                                  color: Colors.grey[600],
+                                ),
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
                           ],
                         ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 16),
+                      const Divider(height: 1),
+                      const SizedBox(height: 12),
                       Text(
-                        DateFormat.yMMMd().format(req.createdAt),
-                        style: TextStyle(color: Colors.grey[400], fontSize: 12),
+                        DateFormat.yMMMd().format(req.createdAt).toUpperCase(),
+                        style: GoogleFonts.outfit(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.grey[300],
+                          letterSpacing: 0.5,
+                        ),
                       ),
                     ],
                   ),

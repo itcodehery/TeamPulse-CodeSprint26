@@ -38,7 +38,7 @@ class ProfileScreen extends ConsumerWidget {
       appBar: AppBar(
         title: Text(
           'Profile',
-          style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+          style: GoogleFonts.outfit(fontWeight: FontWeight.w600),
         ),
         actions: [
           IconButton(
@@ -61,7 +61,7 @@ class ProfileScreen extends ConsumerWidget {
             const SizedBox(height: 16),
             Text(
               user.name,
-              style: GoogleFonts.poppins(
+              style: GoogleFonts.outfit(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
               ),
@@ -172,7 +172,7 @@ class ProfileScreen extends ConsumerWidget {
           children: [
             Text(
               title,
-              style: GoogleFonts.poppins(
+              style: GoogleFonts.outfit(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
                 color: Colors.black87,

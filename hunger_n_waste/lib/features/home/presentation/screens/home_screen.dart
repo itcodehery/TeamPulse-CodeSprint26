@@ -1,9 +1,12 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../food_requests/presentation/providers/active_requests_provider.dart';
 import '../../../food_requests/domain/models/food_request.dart';
@@ -132,26 +135,64 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
     return Scaffold(
       extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        title: Text(
-          'Explore',
-          style: GoogleFonts.outfit(
-            fontWeight: FontWeight.w600,
-            fontSize: 24,
-            color: Colors.black87,
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(72),
+        child: Container(
+          margin: const EdgeInsets.fromLTRB(16, 40, 16, 0),
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.85),
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.08),
+                blurRadius: 20,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(24),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Row(
+                  children: [
+                    Text(
+                      'Explore',
+                      style: GoogleFonts.outfit(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 24,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    const Spacer(),
+                    IconButton(
+                      icon: const Icon(
+                        Icons.logout_rounded,
+                        color: Colors.black87,
+                        size: 24,
+                      ),
+                      onPressed: () async {
+                        await Supabase.instance.client.auth.signOut();
+                        if (mounted) context.go('/login');
+                      },
+                    ),
+                    IconButton(
+                      icon: const Icon(
+                        Icons.notifications_none_rounded,
+                        color: Colors.black87,
+                        size: 24,
+                      ),
+                      onPressed: () {},
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ),
         ),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(
-              Icons.notifications_outlined,
-              color: Colors.black87,
-            ),
-            onPressed: () {},
-          ),
-        ],
       ),
       body: Stack(
         children: [
@@ -257,19 +298,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           DraggableScrollableSheet(
             initialChildSize: 0.35,
             minChildSize: 0.18,
-            maxChildSize: 0.8,
+            maxChildSize: 0.85,
             builder: (context, scrollController) {
               return Container(
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(20),
+                    top: Radius.circular(32),
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
-                      blurRadius: 10,
-                      offset: const Offset(0, -5),
+                      color: Colors.black.withOpacity(0.06),
+                      blurRadius: 24,
+                      offset: const Offset(0, -8),
                     ),
                   ],
                 ),
@@ -291,34 +332,35 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           ),
                           // Search bar
                           Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            padding: const EdgeInsets.symmetric(horizontal: 24),
                             child: TextField(
                               controller: _searchController,
+                              style: GoogleFonts.outfit(fontSize: 16),
                               decoration: InputDecoration(
                                 hintText: 'Search organizations...',
-                                prefixIcon: const Icon(Icons.search),
+                                hintStyle: GoogleFonts.outfit(
+                                  color: Colors.grey[400],
+                                ),
+                                prefixIcon: Icon(
+                                  Icons.search_rounded,
+                                  color: Colors.grey[400],
+                                ),
                                 suffixIcon: _searchQuery.isNotEmpty
                                     ? IconButton(
-                                        icon: const Icon(Icons.clear),
-                                        onPressed: () {
-                                          _searchController.clear();
-                                        },
+                                        icon: const Icon(Icons.clear_rounded),
+                                        onPressed: () =>
+                                            _searchController.clear(),
                                       )
                                     : null,
                                 border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(
-                                    color: Colors.grey[300]!,
-                                  ),
-                                ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(
-                                    color: Colors.grey[300]!,
-                                  ),
+                                  borderRadius: BorderRadius.circular(20),
+                                  borderSide: BorderSide.none,
                                 ),
                                 filled: true,
                                 fillColor: Colors.grey[50],
+                                contentPadding: const EdgeInsets.symmetric(
+                                  vertical: 16,
+                                ),
                               ),
                             ),
                           ),
@@ -454,249 +496,209 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+      ),
       builder: (context) {
-        return Container(
-          width: double.infinity,
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom + 32,
+            left: 24,
+            right: 24,
+            top: 12,
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // 1. Drag Handle
-              Container(
-                margin: const EdgeInsets.symmetric(vertical: 16),
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.grey[200],
-                  borderRadius: BorderRadius.circular(2),
+              Center(
+                child: Container(
+                  width: 36,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[200],
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
               ),
-
-              Padding(
-                padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // 2. Header: Org Info
-                    Row(
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).primaryColor.withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Icon(
+                      Icons.volunteer_activism_rounded,
+                      color: Theme.of(context).primaryColor,
+                      size: 26,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Container(
-                          padding: const EdgeInsets.all(2),
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: Colors.grey[100]!,
-                              width: 2,
-                            ),
-                          ),
-                          child: CircleAvatar(
-                            radius: 26,
-                            backgroundColor: Colors.grey[50],
-                            child: Icon(
-                              Icons.volunteer_activism_rounded,
-                              color: Theme.of(context).primaryColor,
-                              size: 28,
-                            ),
+                        Text(
+                          req.organization?.organizationName ??
+                              'Community Partner',
+                          style: GoogleFonts.outfit(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black87,
                           ),
                         ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                req.organization?.organizationName ??
-                                    'Community Organization',
-                                style: GoogleFonts.outfit(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.black87,
-                                ),
-                              ),
-                              const SizedBox(height: 2),
-                              Row(
-                                children: [
-                                  Icon(
-                                    Icons.verified_rounded,
-                                    size: 14,
-                                    color: Theme.of(context).primaryColor,
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    'Verified Partner',
-                                    style: GoogleFonts.outfit(
-                                      fontSize: 13,
-                                      color: Colors.grey[600],
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                        // Status Badge (Quantity)
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Theme.of(
-                              context,
-                            ).primaryColor.withOpacity(0.08),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Text(
-                            '${req.quantity} Servings',
-                            style: GoogleFonts.outfit(
-                              fontWeight: FontWeight.w600,
-                              color: Theme.of(context).primaryColor,
-                              fontSize: 13,
-                            ),
+                        Text(
+                          'Verified Partner • Active Now',
+                          style: GoogleFonts.outfit(
+                            fontSize: 12,
+                            color: Colors.grey[500],
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 32),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 32),
 
-                    // 3. The Request Narrative
-                    Text(
-                      'Requesting help with'.toUpperCase(),
-                      style: GoogleFonts.outfit(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.grey[500],
-                        letterSpacing: 1.2,
+              Text(
+                'THE IMPACT'.toUpperCase(),
+                style: GoogleFonts.outfit(
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.5,
+                  color: Theme.of(context).primaryColor,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text.rich(
+                TextSpan(
+                  children: [
+                    const TextSpan(text: "Help provide "),
+                    TextSpan(
+                      text: "${req.quantity} servings",
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black,
                       ),
                     ),
-                    const SizedBox(height: 12),
-                    Text.rich(
-                      TextSpan(
-                        children: [
-                          const TextSpan(text: "We are currently looking for "),
-                          TextSpan(
-                            text: req.foodType,
-                            style: TextStyle(
-                              color: Colors.black87,
-                              fontWeight: FontWeight.w600,
-                              decoration: TextDecoration.underline,
-                              decorationColor: Theme.of(
-                                context,
-                              ).primaryColor.withOpacity(0.3),
-                            ),
-                          ),
-                          const TextSpan(text: " to help feed "),
-                          TextSpan(
-                            text: "${req.quantity} people",
-                            style: const TextStyle(
-                              color: Colors.black87,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const TextSpan(
-                            text: ". Your contribution makes a direct impact.",
-                          ),
-                        ],
-                      ),
-                      style: GoogleFonts.outfit(
-                        fontSize: 20,
-                        height: 1.4,
-                        color: Colors.grey[800],
-                        fontWeight: FontWeight.w300,
+                    const TextSpan(text: " of "),
+                    TextSpan(
+                      text: req.foodType,
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Theme.of(context).primaryColor,
+                        decoration: TextDecoration.underline,
+                        decorationStyle: TextDecorationStyle.solid,
+                        decorationColor: Theme.of(
+                          context,
+                        ).primaryColor.withOpacity(0.3),
                       ),
                     ),
-                    const SizedBox(height: 24),
+                    const TextSpan(
+                      text:
+                          " to those in need. Every contribution brings a smile.",
+                    ),
+                  ],
+                ),
+                style: GoogleFonts.outfit(
+                  fontSize: 22,
+                  height: 1.4,
+                  fontWeight: FontWeight.w300,
+                  color: Colors.grey[800],
+                ),
+              ),
+              const SizedBox(height: 32),
 
-                    // 4. Location Context
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.grey[50],
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(color: Colors.grey[100]!),
+                ),
+                child: Row(
+                  children: [
                     Container(
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: Colors.grey[50],
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.grey[100]!),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.location_on_rounded,
-                            color: Colors.grey[400],
-                            size: 20,
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Pickup Location',
-                                  style: GoogleFonts.outfit(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.grey[500],
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  req.organization?.address ??
-                                      'Location details provided upon acceptance',
-                                  style: GoogleFonts.outfit(
-                                    fontSize: 14,
-                                    color: Colors.grey[800],
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ],
-                            ),
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.02),
+                            blurRadius: 10,
                           ),
                         ],
                       ),
+                      child: const Icon(
+                        Icons.location_on_rounded,
+                        size: 20,
+                        color: Colors.grey,
+                      ),
                     ),
-                    const SizedBox(height: 32),
-
-                    // 5. Action Button
-                    SizedBox(
-                      width: double.infinity,
-                      height: 58,
-                      child: FilledButton(
-                        style: FilledButton.styleFrom(
-                          backgroundColor: Theme.of(context).primaryColor,
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Pickup Address',
+                            style: GoogleFonts.outfit(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.grey[400],
+                            ),
                           ),
-                          elevation: 0,
-                        ),
-                        onPressed: () {
-                          Navigator.of(context).pop(); // Close modal
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  DeliveryOptionsScreen(request: req),
+                          Text(
+                            req.organization?.address ?? 'Login to see details',
+                            style: GoogleFonts.outfit(
+                              fontSize: 14,
+                              color: Colors.grey[700],
                             ),
-                          );
-                        },
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(Icons.favorite_rounded, size: 20),
-                            const SizedBox(width: 12),
-                            Text(
-                              'Accept & Support',
-                              style: GoogleFonts.outfit(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
                       ),
                     ),
                   ],
+                ),
+              ),
+              const SizedBox(height: 32),
+
+              SizedBox(
+                height: 58,
+                child: FilledButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) =>
+                            DeliveryOptionsScreen(request: req),
+                      ),
+                    );
+                  },
+                  style: FilledButton.styleFrom(
+                    backgroundColor: Theme.of(context).primaryColor,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(18),
+                    ),
+                    elevation: 0,
+                  ),
+                  child: Text(
+                    'ACCEPT & SUPPORT',
+                    style: GoogleFonts.outfit(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
                 ),
               ),
             ],

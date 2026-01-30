@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../data/repositories/auth_repository.dart';
@@ -69,7 +70,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xFFF9F9F9),
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -82,25 +83,31 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 Hero(
                   tag: 'app_logo',
                   child: Container(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.primaryContainer.withOpacity(0.3),
+                      color: Colors.white,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.04),
+                          blurRadius: 20,
+                          offset: const Offset(0, 10),
+                        ),
+                      ],
                     ),
                     child: Icon(
                       Icons.volunteer_activism_rounded,
-                      size: 64,
-                      color: Theme.of(context).colorScheme.primary,
+                      size: 56,
+                      color: Theme.of(context).primaryColor,
                     ),
                   ),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 32),
                 Text(
                   'HappyMeal',
                   textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                  style: GoogleFonts.outfit(
+                    fontSize: 32,
                     fontWeight: FontWeight.bold,
                     color: Colors.black87,
                   ),
@@ -109,124 +116,143 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 Text(
                   'Connect. Donate. Reduce Waste.',
                   textAlign: TextAlign.center,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
+                  style: GoogleFonts.outfit(
+                    fontSize: 14,
+                    color: Colors.grey[500],
+                    letterSpacing: 0.5,
+                  ),
                 ),
                 const SizedBox(height: 48),
 
-                // Email Field
-                TextField(
-                  controller: _emailController,
-                  decoration: InputDecoration(
-                    labelText: 'Email',
-                    hintText: 'Enter your email',
-                    prefixIcon: const Icon(Icons.email_outlined),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none,
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none,
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(
-                        color: Colors.green,
-                        width: 2,
+                Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(32),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.03),
+                        blurRadius: 20,
+                        offset: const Offset(0, 10),
                       ),
-                    ),
-                    filled: true,
-                    fillColor: Colors.grey[100],
-                    contentPadding: const EdgeInsets.symmetric(
-                      vertical: 16,
-                      horizontal: 16,
-                    ),
+                    ],
                   ),
-                  keyboardType: TextInputType.emailAddress,
-                  textInputAction: TextInputAction.next,
-                ),
-                const SizedBox(height: 16),
-
-                // Password Field
-                TextField(
-                  controller: _passwordController,
-                  obscureText: true,
-                  decoration: InputDecoration(
-                    labelText: 'Password',
-                    hintText: 'Enter your password',
-                    prefixIcon: const Icon(Icons.lock_outline),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none,
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none,
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(
-                        color: Colors.green,
-                        width: 2,
+                  child: Column(
+                    children: [
+                      // Email Field
+                      TextField(
+                        controller: _emailController,
+                        style: GoogleFonts.outfit(fontSize: 16),
+                        decoration: InputDecoration(
+                          hintText: 'Email Address',
+                          hintStyle: GoogleFonts.outfit(
+                            color: Colors.grey[400],
+                          ),
+                          prefixIcon: Icon(
+                            Icons.email_outlined,
+                            color: Colors.grey[400],
+                            size: 20,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: BorderSide.none,
+                          ),
+                          filled: true,
+                          fillColor: const Color(0xFFF5F5F5),
+                          contentPadding: const EdgeInsets.symmetric(
+                            vertical: 18,
+                          ),
+                        ),
+                        keyboardType: TextInputType.emailAddress,
+                        textInputAction: TextInputAction.next,
                       ),
-                    ),
-                    filled: true,
-                    fillColor: Colors.grey[100],
-                    contentPadding: const EdgeInsets.symmetric(
-                      vertical: 16,
-                      horizontal: 16,
-                    ),
-                  ),
-                  textInputAction: TextInputAction.done,
-                  onSubmitted: (_) => _login(),
-                ),
-                const SizedBox(height: 8),
+                      const SizedBox(height: 16),
 
-                // Forgot Password Link
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: TextButton(
-                    onPressed: () {
-                      // TODO: Implement forgot password
-                    },
-                    style: TextButton.styleFrom(
-                      foregroundColor: Colors.grey[600],
-                    ),
-                    child: const Text('Forgot Password?'),
+                      // Password Field
+                      TextField(
+                        controller: _passwordController,
+                        obscureText: true,
+                        style: GoogleFonts.outfit(fontSize: 16),
+                        decoration: InputDecoration(
+                          hintText: 'Password',
+                          hintStyle: GoogleFonts.outfit(
+                            color: Colors.grey[400],
+                          ),
+                          prefixIcon: Icon(
+                            Icons.lock_outline_rounded,
+                            color: Colors.grey[400],
+                            size: 20,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: BorderSide.none,
+                          ),
+                          filled: true,
+                          fillColor: const Color(0xFFF5F5F5),
+                          contentPadding: const EdgeInsets.symmetric(
+                            vertical: 18,
+                          ),
+                        ),
+                        textInputAction: TextInputAction.done,
+                        onSubmitted: (_) => _login(),
+                      ),
+                      const SizedBox(height: 12),
+
+                      // Forgot Password Link
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: TextButton(
+                          onPressed: () {},
+                          style: TextButton.styleFrom(
+                            foregroundColor: Colors.grey[400],
+                          ),
+                          child: Text(
+                            'Forgot Password?',
+                            style: GoogleFonts.outfit(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+
+                      // Login Button
+                      SizedBox(
+                        width: double.infinity,
+                        height: 58,
+                        child: FilledButton(
+                          onPressed: _isLoading ? null : _login,
+                          style: FilledButton.styleFrom(
+                            backgroundColor: Theme.of(context).primaryColor,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(18),
+                            ),
+                            elevation: 0,
+                          ),
+                          child: _isLoading
+                              ? const SizedBox(
+                                  height: 24,
+                                  width: 24,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2.5,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : Text(
+                                  'LOGIN',
+                                  style: GoogleFonts.outfit(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: 1,
+                                  ),
+                                ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 const SizedBox(height: 32),
-
-                // Login Button
-                FilledButton(
-                  onPressed: _isLoading ? null : _login,
-                  style: FilledButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    elevation: 0,
-                  ),
-                  child: _isLoading
-                      ? const SizedBox(
-                          height: 24,
-                          width: 24,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2.5,
-                            color: Colors.white,
-                          ),
-                        )
-                      : const Text(
-                          'Login',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                ),
-                const SizedBox(height: 24),
 
                 // Sign Up Link
                 Row(
@@ -234,15 +260,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   children: [
                     Text(
                       "Don't have an account?",
-                      style: TextStyle(color: Colors.grey[600]),
+                      style: GoogleFonts.outfit(color: Colors.grey[500]),
                     ),
                     TextButton(
                       onPressed: () {
                         context.push('/auth/select-type');
                       },
-                      child: const Text(
-                        'Sign Up',
-                        style: TextStyle(fontWeight: FontWeight.bold),
+                      child: Text(
+                        'Create Account',
+                        style: GoogleFonts.outfit(
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).primaryColor,
+                        ),
                       ),
                     ),
                   ],
