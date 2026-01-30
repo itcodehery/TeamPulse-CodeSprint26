@@ -10,6 +10,7 @@ import '../features/auth/presentation/screens/user_type_selection_screen.dart';
 import '../features/auth/presentation/screens/donor_registration_screen.dart';
 import '../features/auth/presentation/screens/organization_registration_screen.dart';
 import '../features/auth/presentation/screens/rider_registration_screen.dart';
+import '../features/food_requests/presentation/screens/organization_home_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   final rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -65,6 +66,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/auth/register/rider',
         builder: (context, state) => const RiderRegistrationScreen(),
+      ),
+      GoRoute(
+        path: '/organization-home',
+        builder: (context, state) => const OrganizationHomeScreen(),
       ),
     ],
   );

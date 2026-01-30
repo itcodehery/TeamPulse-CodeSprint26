@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/widgets/location_picker_screen.dart';
+import '../../data/repositories/auth_repository.dart';
+import '../../data/repositories/organization_repository.dart';
+import '../../domain/models/organization_profile.dart';
 import '../../domain/models/user_enums.dart';
 
 class OrganizationRegistrationScreen extends ConsumerStatefulWidget {
@@ -16,6 +21,8 @@ class _OrganizationRegistrationScreenState
     extends ConsumerState<OrganizationRegistrationScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
   final _addressController = TextEditingController();
   final _licenseController = TextEditingController();
   OrganizationType _selectedType = OrganizationType.ngo;
@@ -24,6 +31,8 @@ class _OrganizationRegistrationScreenState
   @override
   void dispose() {
     _nameController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
     _addressController.dispose();
     _licenseController.dispose();
     super.dispose();
@@ -40,7 +49,7 @@ class _OrganizationRegistrationScreenState
     }
   }
 
-  void _submit() {
+  Future<void> _submit() async {
     if (_formKey.currentState!.validate()) {
       if (_selectedLocation == null) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -48,12 +57,51 @@ class _OrganizationRegistrationScreenState
         );
         return;
       }
-      // TODO: Submit info
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Processing Organization Registration...'),
-        ),
-      );
+
+      try {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Creating account...')));
+
+        final authRepo = ref.read(authRepositoryProvider);
+        final orgRepo = ref.read(organizationRepositoryProvider);
+
+        // 1. Sign Up
+        await authRepo.signUpWithEmail(
+          _emailController.text.trim(),
+          _passwordController.text,
+        );
+
+        // 2. Get User ID (Assuming auto-login or retrieving current session)
+        // Wait a bit for session to established if needed, or get user from repo
+        // Supabase usually signs in after signup automatically
+        final user = Supabase.instance.client.auth.currentUser;
+        if (user == null) throw Exception('User creation failed');
+
+        // 3. Create Profile
+        final profile = OrganizationProfile(
+          id: user.id,
+          organizationName: _nameController.text.trim(),
+          organizationType: _selectedType,
+          address: _addressController.text.trim(),
+          latitude: _selectedLocation!.latitude,
+          longitude: _selectedLocation!.longitude,
+          licenseNumber: _licenseController.text.trim(),
+        );
+
+        await orgRepo.createProfile(profile);
+
+        if (mounted) {
+          // Navigate to Organization Home
+          context.go('/organization-home');
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Error: $e')));
+        }
+      }
     }
   }
 
@@ -68,6 +116,31 @@ class _OrganizationRegistrationScreenState
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              TextFormField(
+                controller: _emailController,
+                decoration: const InputDecoration(
+                  labelText: 'Email',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.email_outlined),
+                ),
+                validator: (value) => value == null || value.isEmpty
+                    ? 'Please enter email'
+                    : null,
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _passwordController,
+                decoration: const InputDecoration(
+                  labelText: 'Password',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.lock_outline),
+                ),
+                obscureText: true,
+                validator: (value) => value == null || value.length < 6
+                    ? 'Password must be at least 6 characters'
+                    : null,
+              ),
+              const SizedBox(height: 16),
               TextFormField(
                 controller: _nameController,
                 decoration: const InputDecoration(
