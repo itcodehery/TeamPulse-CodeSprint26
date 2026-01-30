@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../../auth/data/repositories/rider_repository.dart';
 import '../../../auth/data/repositories/donor_repository.dart';
 import '../../../auth/data/repositories/organization_repository.dart';
@@ -59,7 +60,10 @@ class RiderHomeScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Rider Dashboard'),
+        title: Text(
+          'Rider Dashboard',
+          style: GoogleFonts.outfit(fontWeight: FontWeight.w600, fontSize: 24),
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.person),
@@ -206,87 +210,159 @@ class _RiderDashboardContentState
       });
     });
 
-    return Padding(
+    return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // 1. Availability Card
-          Card(
-            elevation: 2,
-            color: isAvailable ? Colors.green[50] : Colors.grey[100],
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              child: SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                title: Text(
-                  isAvailable ? 'YOU ARE ONLINE' : 'YOU ARE OFFLINE',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: isAvailable ? Colors.green[800] : Colors.grey[700],
+          // 1. Premium Availability Card
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: isAvailable
+                    ? [const Color(0xFF2E7D32), const Color(0xFF4CAF50)]
+                    : [const Color(0xFF616161), const Color(0xFF9E9E9E)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: (isAvailable ? Colors.green : Colors.grey).withOpacity(
+                    0.3,
                   ),
+                  blurRadius: 12,
+                  offset: const Offset(0, 6),
                 ),
-                subtitle: Text(
-                  isAvailable
-                      ? 'Accepting deliveries'
-                      : 'Not accepting deliveries',
-                ),
-                secondary: Icon(
-                  isAvailable ? Icons.check_circle : Icons.pause_circle_filled,
-                  color: isAvailable ? Colors.green : Colors.grey,
-                  size: 32,
-                ),
-                value: isAvailable,
-                onChanged: (val) async {
+              ],
+            ),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () async {
+                  final newVal = !isAvailable;
                   try {
-                    debugPrint('🎯 Toggle switched to: $val');
                     await ref
                         .read(riderRepositoryProvider)
-                        .updateAvailability(widget.profile.id, val);
-
-                    // Force refresh the stream provider to get updated data
-                    debugPrint(
-                      '🔄 Invalidating profile provider to force refresh',
-                    );
+                        .updateAvailability(widget.profile.id, newVal);
                     ref.invalidate(riderProfileStreamProvider);
-
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            val ? 'You are now ONLINE' : 'You are now OFFLINE',
-                          ),
-                          duration: const Duration(seconds: 2),
-                          backgroundColor: val
-                              ? Colors.green
-                              : Colors.grey[700],
-                        ),
-                      );
-                    }
                   } catch (e) {
-                    debugPrint('🚨 Error in toggle: $e');
                     if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Failed to update status: $e'),
-                          backgroundColor: Colors.red,
-                        ),
-                      );
+                      ScaffoldMessenger.of(
+                        context,
+                      ).showSnackBar(SnackBar(content: Text('Error: $e')));
                     }
                   }
                 },
+                borderRadius: BorderRadius.circular(24),
+                child: Padding(
+                  padding: const EdgeInsets.all(20.0),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          isAvailable ? Icons.bolt : Icons.power_settings_new,
+                          color: Colors.white,
+                          size: 28,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              isAvailable ? 'ONLINE' : 'OFFLINE',
+                              style: GoogleFonts.outfit(
+                                color: Colors.white,
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 1.2,
+                              ),
+                            ),
+                            Text(
+                              isAvailable
+                                  ? 'Ready to deliver'
+                                  : 'Tap to go online',
+                              style: GoogleFonts.outfit(
+                                color: Colors.white.withOpacity(0.8),
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Transform.scale(
+                        scale: 1.2,
+                        child: Switch(
+                          value: isAvailable,
+                          onChanged: (val) async {
+                            try {
+                              await ref
+                                  .read(riderRepositoryProvider)
+                                  .updateAvailability(widget.profile.id, val);
+                              ref.invalidate(riderProfileStreamProvider);
+                            } catch (e) {
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text('Error: $e')),
+                                );
+                              }
+                            }
+                          },
+                          activeColor: Colors.white,
+                          activeTrackColor: Colors.white.withOpacity(0.4),
+                          inactiveThumbColor: Colors.white,
+                          inactiveTrackColor: Colors.black12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
           ),
 
           const SizedBox(height: 24),
 
-          // Available Orders Section
-          const Text(
-            'Available Orders',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          // 2. Statistics Overview
+          Row(
+            children: [
+              _buildStatCard(
+                context,
+                'Deliveries',
+                '12',
+                Icons.shopping_bag_outlined,
+                Colors.blue,
+              ),
+              const SizedBox(width: 12),
+              _buildStatCard(
+                context,
+                'Ratings',
+                '4.8',
+                Icons.star_outline_rounded,
+                Colors.orange,
+              ),
+            ],
           ),
-          const SizedBox(height: 12),
+
+          const SizedBox(height: 32),
+
+          // Available Orders Section
+          Text(
+            'Available Orders',
+            style: GoogleFonts.outfit(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Colors.black87,
+            ),
+          ),
+          const SizedBox(height: 16),
 
           Consumer(
             builder: (context, ref, _) {
@@ -295,21 +371,24 @@ class _RiderDashboardContentState
               return ordersAsync.when(
                 data: (orders) {
                   if (orders.isEmpty) {
-                    return Card(
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Center(
-                          child: Text(
-                            'No available orders at the moment',
-                            style: TextStyle(color: Colors.grey[600]),
-                          ),
+                    return Container(
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: Colors.grey[100]!),
+                      ),
+                      child: Center(
+                        child: Text(
+                          'No available orders nearby',
+                          style: GoogleFonts.outfit(color: Colors.grey[500]),
                         ),
                       ),
                     );
                   }
 
                   return SizedBox(
-                    height: 180,
+                    height: 240,
                     child: ListView.builder(
                       scrollDirection: Axis.horizontal,
                       itemCount: orders.length,
@@ -323,71 +402,164 @@ class _RiderDashboardContentState
                   );
                 },
                 loading: () => const SizedBox(
-                  height: 180,
+                  height: 240,
                   child: Center(child: CircularProgressIndicator()),
                 ),
-                error: (err, stack) => Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Text('Error loading orders: $err'),
-                  ),
-                ),
+                error: (err, stack) => Text('Error: $err'),
               );
             },
           ),
 
-          const SizedBox(height: 24),
-          const Text(
-            'Active Jobs',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          const SizedBox(height: 32),
+
+          // Active Jobs Section
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Active Jobs',
+                style: GoogleFonts.outfit(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+              Consumer(
+                builder: (context, ref, _) {
+                  final jobsAsync = ref.watch(riderActiveJobsStreamProvider);
+                  return jobsAsync.maybeWhen(
+                    data: (jobs) => jobs.isEmpty
+                        ? const SizedBox.shrink()
+                        : Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).primaryColor,
+                              borderRadius: BorderRadius.circular(100),
+                            ),
+                            child: Text(
+                              '${jobs.length}',
+                              style: GoogleFonts.outfit(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ),
+                    orElse: () => const SizedBox.shrink(),
+                  );
+                },
+              ),
+            ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
 
-          // 2. Active Jobs List
-          Expanded(
-            child: Consumer(
-              builder: (context, ref, _) {
-                final jobsAsync = ref.watch(riderActiveJobsStreamProvider);
+          Consumer(
+            builder: (context, ref, _) {
+              final jobsAsync = ref.watch(riderActiveJobsStreamProvider);
 
-                return jobsAsync.when(
-                  data: (jobs) {
-                    if (jobs.isEmpty) {
-                      return Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.delivery_dining_outlined,
-                              size: 64,
-                              color: Colors.grey[300],
+              return jobsAsync.when(
+                data: (jobs) {
+                  if (jobs.isEmpty) {
+                    return Container(
+                      padding: const EdgeInsets.all(40),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(color: Colors.grey[100]!),
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.delivery_dining_outlined,
+                            size: 64,
+                            color: Colors.grey[200],
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            isAvailable
+                                ? 'No active jobs yet'
+                                : 'Go online to see jobs',
+                            style: GoogleFonts.outfit(
+                              color: Colors.grey[500],
+                              fontSize: 16,
                             ),
-                            const SizedBox(height: 16),
-                            Text(
-                              isAvailable
-                                  ? 'Waiting for requests...'
-                                  : 'Go Online to receive requests',
-                              style: TextStyle(color: Colors.grey[600]),
-                            ),
-                          ],
-                        ),
-                      );
-                    }
-
-                    return ListView.builder(
-                      itemCount: jobs.length,
-                      itemBuilder: (context, index) {
-                        return _JobCard(job: jobs[index]);
-                      },
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
                     );
-                  },
-                  error: (err, stack) => Center(child: Text('Error: $err')),
-                  loading: () =>
-                      const Center(child: CircularProgressIndicator()),
-                );
-              },
-            ),
+                  }
+
+                  return ListView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    padding: EdgeInsets.zero,
+                    itemCount: jobs.length,
+                    itemBuilder: (context, index) {
+                      return _JobCard(job: jobs[index]);
+                    },
+                  );
+                },
+                error: (err, stack) => Center(child: Text('Error')),
+                loading: () => const Center(child: CircularProgressIndicator()),
+              );
+            },
           ),
+          const SizedBox(height: 24),
         ],
+      ),
+    );
+  }
+
+  Widget _buildStatCard(
+    BuildContext context,
+    String label,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.03),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+          border: Border.all(color: Colors.grey[100]!),
+        ),
+        child: Column(
+          children: [
+            Icon(icon, color: color, size: 24),
+            const SizedBox(height: 8),
+            Text(
+              value,
+              style: GoogleFonts.outfit(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              label,
+              style: GoogleFonts.outfit(
+                fontSize: 12,
+                color: Colors.grey[600],
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -444,7 +616,7 @@ class _JobCard extends ConsumerWidget {
       isScrollControlled: true,
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
       ),
       builder: (context) {
         bool qualityChecked = false;
@@ -454,10 +626,10 @@ class _JobCard extends ConsumerWidget {
           builder: (context, setState) {
             return Padding(
               padding: EdgeInsets.only(
-                bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+                bottom: MediaQuery.of(context).viewInsets.bottom + 32,
                 left: 24,
                 right: 24,
-                top: 16,
+                top: 12,
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -465,10 +637,10 @@ class _JobCard extends ConsumerWidget {
                 children: [
                   Center(
                     child: Container(
-                      width: 40,
+                      width: 36,
                       height: 4,
                       decoration: BoxDecoration(
-                        color: Colors.grey[300],
+                        color: Colors.grey[200],
                         borderRadius: BorderRadius.circular(2),
                       ),
                     ),
@@ -477,15 +649,15 @@ class _JobCard extends ConsumerWidget {
                   Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.all(12),
+                        padding: const EdgeInsets.all(14),
                         decoration: BoxDecoration(
-                          color: Colors.orange[50],
-                          borderRadius: BorderRadius.circular(12),
+                          color: const Color(0xFFFFF3E0),
+                          borderRadius: BorderRadius.circular(16),
                         ),
                         child: const Icon(
-                          Icons.inventory_2_outlined,
-                          color: Colors.orange,
-                          size: 28,
+                          Icons.inventory_2_rounded,
+                          color: Color(0xFFFF9800),
+                          size: 26,
                         ),
                       ),
                       const SizedBox(width: 16),
@@ -495,14 +667,18 @@ class _JobCard extends ConsumerWidget {
                           children: [
                             Text(
                               'Pickup Verification',
-                              style: Theme.of(context).textTheme.titleLarge
-                                  ?.copyWith(fontWeight: FontWeight.bold),
+                              style: GoogleFonts.outfit(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black87,
+                              ),
                             ),
-                            const SizedBox(height: 4),
                             Text(
-                              'Verify order details before pickup',
-                              style: Theme.of(context).textTheme.bodyMedium
-                                  ?.copyWith(color: Colors.grey[600]),
+                              'Ensure quality standards are met',
+                              style: GoogleFonts.outfit(
+                                fontSize: 13,
+                                color: Colors.grey[500],
+                              ),
                             ),
                           ],
                         ),
@@ -511,35 +687,55 @@ class _JobCard extends ConsumerWidget {
                   ),
                   const SizedBox(height: 32),
 
-                  // Checklist
+                  // Checklist Section
                   Container(
                     decoration: BoxDecoration(
-                      border: Border.all(color: Colors.grey[200]!),
-                      borderRadius: BorderRadius.circular(12),
+                      color: Colors.grey[50],
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(color: Colors.grey[100]!),
                     ),
                     child: Column(
                       children: [
                         CheckboxListTile(
-                          title: const Text('Food Quality Verified'),
-                          subtitle: const Text(
-                            'Freshness and temperature check',
+                          title: Text(
+                            'Food Quality Verified',
+                            style: GoogleFonts.outfit(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 15,
+                            ),
+                          ),
+                          subtitle: Text(
+                            'Freshness & temp check',
+                            style: GoogleFonts.outfit(fontSize: 12),
                           ),
                           value: qualityChecked,
-                          activeColor: Colors.orange,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                          activeColor: const Color(0xFFFF9800),
+                          checkboxShape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(6),
                           ),
                           onChanged: (val) =>
                               setState(() => qualityChecked = val!),
                         ),
-                        const Divider(height: 1),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: Divider(height: 1, color: Colors.grey[200]),
+                        ),
                         CheckboxListTile(
-                          title: const Text('Packaging Intact'),
-                          subtitle: const Text('No spills or damages'),
+                          title: Text(
+                            'Packaging Intact',
+                            style: GoogleFonts.outfit(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 15,
+                            ),
+                          ),
+                          subtitle: Text(
+                            'No spills or damages',
+                            style: GoogleFonts.outfit(fontSize: 12),
+                          ),
                           value: packagingChecked,
-                          activeColor: Colors.orange,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                          activeColor: const Color(0xFFFF9800),
+                          checkboxShape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(6),
                           ),
                           onChanged: (val) =>
                               setState(() => packagingChecked = val!),
@@ -549,42 +745,46 @@ class _JobCard extends ConsumerWidget {
                   ),
                   const SizedBox(height: 24),
 
-                  const Text(
-                    'Proof of Pickup',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 12),
                   OutlinedButton.icon(
-                    onPressed: null, // Disabled for now
-                    icon: const Icon(Icons.camera_alt_outlined),
-                    label: const Text('Capture Photo (Coming Soon)'),
+                    onPressed: null,
+                    icon: const Icon(Icons.camera_rounded, size: 18),
+                    label: Text(
+                      'Capture Photo (Coming Soon)',
+                      style: GoogleFonts.outfit(fontWeight: FontWeight.w600),
+                    ),
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 16),
-                      side: BorderSide(color: Colors.grey[300]!),
+                      side: BorderSide(color: Colors.grey[200]!),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(18),
                       ),
                     ),
                   ),
                   const SizedBox(height: 32),
-                  FilledButton(
-                    onPressed: (qualityChecked && packagingChecked)
-                        ? () {
-                            Navigator.pop(context);
-                            _updateStatus(context, ref, 'in_transit');
-                          }
-                        : null,
-                    style: FilledButton.styleFrom(
-                      backgroundColor: Colors.orange,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                  SizedBox(
+                    height: 56,
+                    child: FilledButton(
+                      onPressed: (qualityChecked && packagingChecked)
+                          ? () {
+                              Navigator.pop(context);
+                              _updateStatus(context, ref, 'in_transit');
+                            }
+                          : null,
+                      style: FilledButton.styleFrom(
+                        backgroundColor: const Color(0xFFFF9800),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(18),
+                        ),
+                        elevation: 0,
                       ),
-                      elevation: 0,
-                    ),
-                    child: const Text(
-                      'CONFIRM PICKUP',
-                      style: TextStyle(fontWeight: FontWeight.bold),
+                      child: Text(
+                        'CONFIRM PICKUP',
+                        style: GoogleFonts.outfit(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
                     ),
                   ),
                 ],
@@ -603,20 +803,21 @@ class _JobCard extends ConsumerWidget {
     double? long,
   ) {
     final nameController = TextEditingController();
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
       ),
       builder: (context) {
         return Padding(
           padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+            bottom: MediaQuery.of(context).viewInsets.bottom + 32,
             left: 24,
             right: 24,
-            top: 16,
+            top: 12,
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -624,10 +825,10 @@ class _JobCard extends ConsumerWidget {
             children: [
               Center(
                 child: Container(
-                  width: 40,
+                  width: 36,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: Colors.grey[300],
+                    color: Colors.grey[200],
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -636,15 +837,15 @@ class _JobCard extends ConsumerWidget {
               Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.all(12),
+                    padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: Colors.green[50],
-                      borderRadius: BorderRadius.circular(12),
+                      color: const Color(0xFFE8F5E9),
+                      borderRadius: BorderRadius.circular(16),
                     ),
                     child: const Icon(
-                      Icons.check_circle_outline,
-                      color: Colors.green,
-                      size: 28,
+                      Icons.task_alt_rounded,
+                      color: Color(0xFF2E7D32),
+                      size: 26,
                     ),
                   ),
                   const SizedBox(width: 16),
@@ -654,14 +855,18 @@ class _JobCard extends ConsumerWidget {
                       children: [
                         Text(
                           'Delivery Handover',
-                          style: Theme.of(context).textTheme.titleLarge
-                              ?.copyWith(fontWeight: FontWeight.bold),
+                          style: GoogleFonts.outfit(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black87,
+                          ),
                         ),
-                        const SizedBox(height: 4),
                         Text(
                           'Confirm receiver details',
-                          style: Theme.of(context).textTheme.bodyMedium
-                              ?.copyWith(color: Colors.grey[600]),
+                          style: GoogleFonts.outfit(
+                            fontSize: 13,
+                            color: Colors.grey[500],
+                          ),
                         ),
                       ],
                     ),
@@ -672,54 +877,71 @@ class _JobCard extends ConsumerWidget {
 
               TextField(
                 controller: nameController,
+                style: GoogleFonts.outfit(fontSize: 16),
                 decoration: InputDecoration(
                   labelText: 'Receiver Name',
+                  labelStyle: GoogleFonts.outfit(color: Colors.grey[600]),
                   hintText: 'Who received the order?',
+                  hintStyle: GoogleFonts.outfit(color: Colors.grey[400]),
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(18),
+                    borderSide: BorderSide(color: Colors.grey[200]!),
                   ),
-                  prefixIcon: const Icon(Icons.person_outline),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(18),
+                    borderSide: BorderSide(color: Colors.grey[200]!),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(18),
+                    borderSide: const BorderSide(color: Color(0xFF2E7D32)),
+                  ),
+                  prefixIcon: const Icon(Icons.person_outline_rounded),
                   filled: true,
                   fillColor: Colors.grey[50],
                 ),
               ),
-              const SizedBox(height: 24),
-              const Text(
-                'Proof of Delivery',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 32),
+
               OutlinedButton.icon(
-                onPressed: null, // Disabled
-                icon: const Icon(Icons.camera_alt_outlined),
-                label: const Text('Capture Photo (Coming Soon)'),
+                onPressed: null,
+                icon: const Icon(Icons.camera_rounded, size: 18),
+                label: Text(
+                  'Capture Proof (Coming Soon)',
+                  style: GoogleFonts.outfit(fontWeight: FontWeight.w600),
+                ),
                 style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
-                  side: BorderSide(color: Colors.grey[300]!),
+                  side: BorderSide(color: Colors.grey[200]!),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(18),
                   ),
                 ),
               ),
               const SizedBox(height: 32),
-              FilledButton(
-                onPressed: () {
-                  if (nameController.text.isNotEmpty) {
-                    Navigator.pop(context);
-                    _updateStatus(context, ref, 'completed');
-                  }
-                },
-                style: FilledButton.styleFrom(
-                  backgroundColor: Colors.green,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+              SizedBox(
+                height: 56,
+                child: FilledButton(
+                  onPressed: () {
+                    if (nameController.text.isNotEmpty) {
+                      Navigator.pop(context);
+                      _updateStatus(context, ref, 'completed');
+                    }
+                  },
+                  style: FilledButton.styleFrom(
+                    backgroundColor: const Color(0xFF2E7D32),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(18),
+                    ),
+                    elevation: 0,
                   ),
-                  elevation: 0,
-                ),
-                child: const Text(
-                  'CONFIRM DELIVERY',
-                  style: TextStyle(fontWeight: FontWeight.bold),
+                  child: Text(
+                    'COMPLETE DELIVERY',
+                    style: GoogleFonts.outfit(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
                 ),
               ),
             ],
@@ -740,68 +962,64 @@ class _JobCard extends ConsumerWidget {
         ? ref.watch(donorProfileProvider(donorId))
         : const AsyncValue<dynamic>.data(null);
 
-    // Dynamic Colors based on status
     final isPending = status == 'pending_pickup';
-    final primaryColor = isPending ? Colors.orange : Colors.green;
-    final statusText = isPending ? 'PICKUP PENDING' : 'IN TRANSIT';
+    final primaryColor = isPending
+        ? const Color(0xFFFF9800)
+        : const Color(0xFF2E7D32);
+    final statusLabel = isPending ? 'PICKUP' : 'IN TRANSIT';
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 20, left: 16, right: 16),
+      margin: const EdgeInsets.only(bottom: 24, left: 16, right: 16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(32),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 24,
+            offset: const Offset(0, 12),
           ),
         ],
       ),
       child: Column(
         children: [
-          // Header with Status
+          // Status Banner
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
             decoration: BoxDecoration(
-              color: primaryColor.withOpacity(0.1),
+              color: primaryColor.withOpacity(0.08),
               borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(20),
+                top: Radius.circular(32),
               ),
             ),
             child: Row(
               children: [
                 Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
+                    horizontal: 12,
                     vertical: 6,
                   ),
                   decoration: BoxDecoration(
                     color: primaryColor,
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(100),
                   ),
                   child: Text(
-                    statusText,
-                    style: const TextStyle(
+                    statusLabel,
+                    style: GoogleFonts.outfit(
                       color: Colors.white,
                       fontSize: 10,
                       fontWeight: FontWeight.bold,
-                      letterSpacing: 0.5,
+                      letterSpacing: 1.2,
                     ),
                   ),
                 ),
                 const Spacer(),
-                Icon(
-                  Icons.inventory_2_outlined,
-                  size: 16,
-                  color: Colors.grey[700],
-                ),
-                const SizedBox(width: 4),
                 Text(
-                  'Qty: ${job['quantity']}',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    color: Colors.grey[800],
+                  'Order #${job['id'].toString().substring(0, 6).toUpperCase()}',
+                  style: GoogleFonts.outfit(
+                    color: Colors.grey[400],
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ],
@@ -809,94 +1027,109 @@ class _JobCard extends ConsumerWidget {
           ),
 
           Padding(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(24),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Food Title
-                Text(
-                  job['food_type'],
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.grey[900],
-                  ),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            job['food_type'],
+                            style: GoogleFonts.outfit(
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black87,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '${job['quantity']} servings ready for delivery',
+                            style: GoogleFonts.outfit(
+                              fontSize: 14,
+                              color: Colors.grey[500],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.grey[50],
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.lunch_dining_rounded,
+                        color: primaryColor,
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 24),
 
-                // Timeline View
+                const SizedBox(height: 32),
+
+                // Timeline
                 _buildTimelineStep(
                   context,
-                  title: 'PICKUP',
+                  title: 'PICKUP FROM',
                   asyncValue: donorAsync,
                   isDonor: true,
                   isActive: isPending,
                   isLast: false,
                 ),
+                const SizedBox(height: 8),
                 _buildTimelineStep(
                   context,
-                  title: 'DROPOFF',
+                  title: 'DELIVER TO',
                   asyncValue: orgAsync,
                   isDonor: false,
-                  isActive: !isPending, // Active if in transit
+                  isActive: !isPending,
                   isLast: true,
                 ),
 
-                const SizedBox(height: 24),
-                const Divider(),
-                const SizedBox(height: 16),
+                const SizedBox(height: 32),
 
-                // Actions
-                if (status == 'pending_pickup') ...[
-                  Row(
-                    children: [
-                      _buildNavigateButton(context, donorAsync, Colors.orange),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        flex: 2,
-                        child: FilledButton.icon(
-                          onPressed: () =>
-                              _showPickupModal(context, ref, null, null),
-                          icon: const Icon(Icons.check_circle_outline),
-                          label: const Text('Start Pickup'),
+                // Action Buttons
+                Row(
+                  children: [
+                    _buildNavigateButton(
+                      context,
+                      isPending ? donorAsync : orgAsync,
+                      primaryColor,
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: SizedBox(
+                        height: 54,
+                        child: FilledButton(
+                          onPressed: () => isPending
+                              ? _showPickupModal(context, ref, null, null)
+                              : _showDeliveryModal(context, ref, null, null),
                           style: FilledButton.styleFrom(
-                            backgroundColor: Colors.orange,
-                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            backgroundColor: primaryColor,
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(18),
                             ),
                             elevation: 0,
                           ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-
-                if (status == 'in_transit') ...[
-                  Row(
-                    children: [
-                      _buildNavigateButton(context, orgAsync, Colors.green),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        flex: 2,
-                        child: FilledButton.icon(
-                          onPressed: () =>
-                              _showDeliveryModal(context, ref, null, null),
-                          icon: const Icon(Icons.done_all),
-                          label: const Text('Complete Delivery'),
-                          style: FilledButton.styleFrom(
-                            backgroundColor: Colors.green,
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                          child: Text(
+                            isPending ? 'START PICKUP' : 'COMPLETE DELIVERY',
+                            style: GoogleFonts.outfit(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 15,
+                              letterSpacing: 0.5,
                             ),
-                            elevation: 0,
                           ),
                         ),
                       ),
-                    ],
-                  ),
-                ],
+                    ),
+                  ],
+                ),
               ],
             ),
           ),
@@ -911,9 +1144,12 @@ class _JobCard extends ConsumerWidget {
     Color color,
   ) {
     return Container(
+      height: 54,
+      width: 54,
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
+        color: color.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: color.withOpacity(0.1)),
       ),
       child: IconButton(
         onPressed: () {
@@ -921,16 +1157,17 @@ class _JobCard extends ConsumerWidget {
             if (data != null) {
               try {
                 final d = data as dynamic;
-                final lat =
-                    d.defaultLatitude ??
-                    d.latitude; // handle both models loosely
+                final lat = d.defaultLatitude ?? d.latitude;
                 final long = d.defaultLongitude ?? d.longitude;
 
                 if (lat != null && long != null) {
                   _launchMap(lat, long);
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Location not available')),
+                    const SnackBar(
+                      content: Text('Location not available'),
+                      behavior: SnackBarBehavior.floating,
+                    ),
                   );
                 }
               } catch (e) {
@@ -939,9 +1176,8 @@ class _JobCard extends ConsumerWidget {
             }
           });
         },
-        icon: Icon(Icons.navigation_outlined, color: color),
+        icon: Icon(Icons.near_me_rounded, color: color, size: 22),
         tooltip: 'Navigate',
-        style: IconButton.styleFrom(padding: const EdgeInsets.all(12)),
       ),
     );
   }
@@ -954,117 +1190,113 @@ class _JobCard extends ConsumerWidget {
     required bool isActive,
     required bool isLast,
   }) {
+    final color = isDonor ? const Color(0xFFFF9800) : const Color(0xFF2E7D32);
+
     return IntrinsicHeight(
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Timeline indicator
           Column(
             children: [
               Container(
-                width: 12,
-                height: 12,
+                width: 20,
+                height: 20,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: isActive
-                      ? (isDonor ? Colors.orange : Colors.green)
-                      : Colors.grey[300],
-                  border: isActive
-                      ? null
-                      : Border.all(color: Colors.grey[400]!, width: 2),
+                  color: isActive ? color : Colors.white,
+                  border: Border.all(
+                    color: isActive ? color : Colors.grey[200]!,
+                    width: 2,
+                  ),
                 ),
+                child: isActive
+                    ? const Icon(Icons.check, size: 12, color: Colors.white)
+                    : null,
               ),
               if (!isLast)
                 Expanded(
                   child: Container(
                     width: 2,
-                    color: Colors.grey[200],
-                    margin: const EdgeInsets.symmetric(vertical: 4),
+                    color: Colors.grey[100],
+                    margin: const EdgeInsets.symmetric(vertical: 8),
                   ),
                 ),
             ],
           ),
-          const SizedBox(width: 16),
-
-          // Content
+          const SizedBox(width: 20),
           Expanded(
             child: Padding(
-              padding: EdgeInsets.only(bottom: isLast ? 0 : 24.0),
+              padding: EdgeInsets.only(bottom: isLast ? 0 : 32.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     title,
-                    style: TextStyle(
-                      fontSize: 12,
+                    style: GoogleFonts.outfit(
+                      fontSize: 11,
                       fontWeight: FontWeight.bold,
-                      color: isActive ? Colors.black87 : Colors.grey[500],
-                      letterSpacing: 0.5,
+                      color: isActive ? color : Colors.grey[400],
+                      letterSpacing: 1.5,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 6),
                   asyncValue.when(
                     data: (data) {
-                      if (data == null)
+                      if (data == null) {
                         return Text(
-                          'Loading info...',
-                          style: TextStyle(color: Colors.grey[400]),
-                        );
-
-                      if (isDonor) {
-                        final d = data as dynamic;
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'From Donor',
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                            Text(
-                              d.defaultAddress ?? 'No Address',
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: Colors.grey[600],
-                              ),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
-                        );
-                      } else {
-                        final o = data as dynamic;
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              o.organizationName,
-                              style: const TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                            Text(
-                              o.address,
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: Colors.grey[600],
-                              ),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
+                          'Loading details...',
+                          style: GoogleFonts.outfit(
+                            color: Colors.grey[400],
+                            fontSize: 14,
+                          ),
                         );
                       }
+
+                      final name = isDonor
+                          ? 'Donor Location'
+                          : (data as dynamic).organizationName as String;
+                      final address = isDonor
+                          ? (data as dynamic).defaultAddress ?? 'No Address'
+                          : (data as dynamic).address as String;
+
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            name,
+                            style: GoogleFonts.outfit(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: isActive
+                                  ? Colors.black87
+                                  : Colors.grey[500],
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            address,
+                            style: GoogleFonts.outfit(
+                              fontSize: 13,
+                              color: Colors.grey[500],
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      );
                     },
                     loading: () => Container(
-                      width: 100,
-                      height: 10,
-                      color: Colors.grey[100],
+                      width: 140,
+                      height: 12,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[50],
+                        borderRadius: BorderRadius.circular(4),
+                      ),
                     ),
-                    error: (_, __) => const Text('Error loading info'),
+                    error: (_, __) => Text(
+                      'Address unavailable',
+                      style: GoogleFonts.outfit(color: Colors.red[300]),
+                    ),
                   ),
                 ],
               ),
@@ -1098,120 +1330,204 @@ class _AvailableOrderCardState extends ConsumerState<_AvailableOrderCard> {
       return const SizedBox.shrink(); // Hide immediately
     }
 
-    return Card(
-      margin: const EdgeInsets.only(right: 12),
-      elevation: 2,
-      child: Container(
-        width: 280,
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+    return Container(
+      width: 300,
+      height: 240,
+      margin: const EdgeInsets.only(right: 16, bottom: 8, top: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(28),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(28),
+        child: Stack(
           children: [
-            Row(
-              children: [
-                Icon(Icons.restaurant, color: Theme.of(context).primaryColor),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
+            // Background Decoration
+            Positioned(
+              right: -20,
+              top: -20,
+              child: Icon(
+                Icons.restaurant_menu,
+                size: 100,
+                color: Colors.green.withOpacity(0.05),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFE8F5E9),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.bolt,
+                              size: 14,
+                              color: Color(0xFF2E7D32),
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              'NEW',
+                              style: GoogleFonts.outfit(
+                                color: const Color(0xFF2E7D32),
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 1,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Text(
+                        '刚刚', // Just now
+                        style: GoogleFonts.outfit(
+                          color: Colors.grey[400],
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
                     widget.order.foodType,
-                    style: const TextStyle(
+                    style: GoogleFonts.outfit(
+                      fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      fontSize: 16,
+                      color: Colors.black87,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Icon(Icons.people, size: 16, color: Colors.grey[600]),
-                const SizedBox(width: 4),
-                Text(
-                  '${widget.order.quantity} servings',
-                  style: TextStyle(color: Colors.grey[700]),
-                ),
-              ],
-            ),
-            const SizedBox(height: 4),
-            Row(
-              children: [
-                Icon(Icons.business, size: 16, color: Colors.grey[600]),
-                const SizedBox(width: 4),
-                Expanded(
-                  child: Text(
-                    widget.order.organization?.organizationName ??
-                        'Organization',
-                    style: TextStyle(color: Colors.grey[700]),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
-            ),
-            const Spacer(),
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton.icon(
-                onPressed: _isLoading
-                    ? null
-                    : () async {
-                        // Cancel any ongoing vibration when user interacts
-                        Vibration.cancel();
-
-                        setState(() {
-                          _isLoading = true;
-                          _isAccepted = true; // Optimistic update
-                        });
-
-                        try {
-                          await ref
-                              .read(foodRequestRepositoryProvider)
-                              .assignRiderToRequest(
-                                requestId: widget.order.id,
-                                riderId: widget.riderId,
-                              );
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                  'Order Accepted! Proceed to Pickup.',
-                                ),
-                                backgroundColor: Colors.green,
-                              ),
-                            );
-                          }
-                        } catch (e) {
-                          if (mounted) {
-                            setState(() {
-                              _isAccepted = false; // Revert
-                              _isLoading = false;
-                            });
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Failed to accept order'),
-                                backgroundColor: Colors.red,
-                              ),
-                            );
-                          }
-                        }
-                      },
-                icon: _isLoading
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.people_outline,
+                        size: 16,
+                        color: Colors.grey[600],
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        '${widget.order.quantity} servings available',
+                        style: GoogleFonts.outfit(
+                          color: Colors.grey[600],
+                          fontSize: 13,
                         ),
-                      )
-                    : const Icon(Icons.check_circle, size: 18),
-                label: Text(_isLoading ? 'Accepting...' : 'Accept & Pickup'),
-                style: FilledButton.styleFrom(
-                  backgroundColor: Theme.of(context).primaryColor,
-                ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.location_on_outlined,
+                        size: 16,
+                        color: Colors.grey[600],
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          widget.order.organization?.organizationName ??
+                              'Nearby Org',
+                          style: GoogleFonts.outfit(
+                            color: Colors.grey[600],
+                            fontSize: 13,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const Spacer(),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 46,
+                    child: FilledButton(
+                      onPressed: _isLoading
+                          ? null
+                          : () async {
+                              Vibration.cancel();
+                              setState(() {
+                                _isLoading = true;
+                                _isAccepted = true;
+                              });
+                              try {
+                                await ref
+                                    .read(foodRequestRepositoryProvider)
+                                    .assignRiderToRequest(
+                                      requestId: widget.order.id,
+                                      riderId: widget.riderId,
+                                    );
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                        'Order Accepted! Proceed to Pickup.',
+                                      ),
+                                      backgroundColor: Color(0xFF2E7D32),
+                                      behavior: SnackBarBehavior.floating,
+                                    ),
+                                  );
+                                }
+                              } catch (e) {
+                                if (mounted) {
+                                  setState(() {
+                                    _isAccepted = false;
+                                    _isLoading = false;
+                                  });
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Failed to accept order'),
+                                    ),
+                                  );
+                                }
+                              }
+                            },
+                      style: FilledButton.styleFrom(
+                        backgroundColor: const Color(0xFF2E7D32),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: _isLoading
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : Text(
+                              'Accept & Pickup',
+                              style: GoogleFonts.outfit(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 14,
+                              ),
+                            ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ],

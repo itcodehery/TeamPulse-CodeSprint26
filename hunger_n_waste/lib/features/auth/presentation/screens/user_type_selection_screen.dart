@@ -97,32 +97,32 @@ class _RoleCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.04),
             blurRadius: 20,
-            offset: const Offset(0, 4),
+            offset: const Offset(0, 10),
           ),
         ],
-        border: Border.all(color: Colors.grey[100]!),
+        border: Border.all(color: Colors.grey[50]!),
       ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(24),
           highlightColor: color.withOpacity(0.05),
           splashColor: color.withOpacity(0.1),
           child: Padding(
-            padding: const EdgeInsets.all(24.0),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
             child: Row(
               children: [
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: color.withOpacity(0.1),
-                    shape: BoxShape.circle,
+                    borderRadius: BorderRadius.circular(16),
                   ),
                   child: Icon(icon, color: color, size: 28),
                 ),
@@ -135,7 +135,7 @@ class _RoleCard extends StatelessWidget {
                         title,
                         style: GoogleFonts.outfit(
                           fontSize: 18,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: FontWeight.bold,
                           color: Colors.black87,
                         ),
                       ),
@@ -144,16 +144,16 @@ class _RoleCard extends StatelessWidget {
                         subtitle,
                         style: GoogleFonts.outfit(
                           fontSize: 14,
-                          color: Colors.grey[600],
+                          color: Colors.grey[500],
                         ),
                       ),
                     ],
                   ),
                 ),
                 Icon(
-                  Icons.arrow_forward_rounded,
-                  color: Colors.grey[400],
-                  size: 20,
+                  Icons.chevron_right_rounded,
+                  color: Colors.grey[300],
+                  size: 24,
                 ),
               ],
             ),
