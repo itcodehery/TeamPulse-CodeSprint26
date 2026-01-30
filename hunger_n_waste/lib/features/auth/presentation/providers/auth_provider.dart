@@ -103,7 +103,14 @@ class AuthNotifier extends Notifier<AuthState> {
               .select()
               .eq('id', userId)
               .maybeSingle();
-          if (dData != null) donorProfile = DonorProfile.fromJson(dData);
+          if (dData != null) {
+            try {
+              donorProfile = DonorProfile.fromJson(dData);
+            } catch (innerE) {
+              print('WARNING: DonorProfile parsing failed: $innerE');
+              // Do not rethrow; allow login to proceed without full profile
+            }
+          }
           break;
         case UserType.organization:
           final oData = await client
@@ -130,10 +137,11 @@ class AuthNotifier extends Notifier<AuthState> {
         riderProfile: riderProfile,
         isLoading: false,
       );
-    } catch (e) {
+    } catch (e, stack) {
       // In case of error (e.g. network), we might want to sign out or show error
       state = const AuthState(isLoading: false);
       print('Error loading user data: $e');
+      print('Stack trace: $stack');
     }
   }
 
