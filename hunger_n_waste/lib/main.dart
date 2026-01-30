@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'core/constants/supabase_constants.dart';
+import 'core/services/notification_service.dart';
 import 'router/app_router.dart';
 
 Future<void> main() async {
@@ -19,6 +20,9 @@ Future<void> main() async {
       authFlowType: AuthFlowType.pkce,
     ),
   );
+
+  // Initialize notification service
+  await NotificationService.initialize();
 
   runApp(const ProviderScope(child: MyApp()));
 }

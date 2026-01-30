@@ -8,6 +8,8 @@ import 'package:geolocator/geolocator.dart';
 import '../../../food_requests/presentation/providers/active_requests_provider.dart';
 import '../../../food_requests/domain/models/food_request.dart';
 import '../providers/organizations_provider.dart';
+import '../providers/donor_notifications_provider.dart';
+import '../../../../core/services/notification_service.dart';
 import '../widgets/organization_card.dart';
 import 'delivery_options_screen.dart';
 
@@ -26,6 +28,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   bool _isMapReady = false;
   bool _hasMovedToUser = false;
   String _searchQuery = '';
+  final Map<String, String> _previousStatuses = {};
 
   @override
   void initState() {
@@ -85,8 +88,48 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     }
   }
 
+  void _showStatusNotification(FoodRequest request, String newStatus) {
+    final message = _getStatusMessage(newStatus, request);
+    NotificationService.showStatusNotification(
+      title: 'Donation Status Update',
+      body: message,
+      payload: request.id,
+    );
+  }
+
+  String _getStatusMessage(String status, FoodRequest request) {
+    switch (status) {
+      case 'pendingPickup':
+        return 'Rider assigned for ${request.foodType}';
+      case 'inTransit':
+        return 'Rider picked up ${request.foodType} and is on the way!';
+      case 'completed':
+        return '${request.foodType} delivered successfully! Thank you for your contribution!';
+      case 'cancelled':
+        return 'Delivery of ${request.foodType} was cancelled';
+      default:
+        return 'Status updated for ${request.foodType}';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    // Listen for status changes on donor's contributions
+    ref.listen(donorNotificationsProvider, (previous, next) {
+      next.whenData((requests) {
+        for (var request in requests) {
+          final previousStatus = _previousStatuses[request.id];
+          final currentStatus = request.status.name;
+
+          if (previousStatus != null && previousStatus != currentStatus) {
+            _showStatusNotification(request, currentStatus);
+          }
+
+          _previousStatuses[request.id] = currentStatus;
+        }
+      });
+    });
+
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(

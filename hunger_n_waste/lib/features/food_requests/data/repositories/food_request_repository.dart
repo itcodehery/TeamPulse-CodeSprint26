@@ -116,6 +116,24 @@ class FoodRequestRepository {
         .toList();
   }
 
+  // Stream for donor contributions (for notifications)
+  Stream<List<FoodRequest>> watchDonorContributions(String donorId) {
+    print(
+      '🔵 [WATCH DONOR CONTRIBUTIONS] Setting up stream for donor: $donorId',
+    );
+    return _client
+        .from('food_requests')
+        .stream(primaryKey: ['id'])
+        .eq('donor_id', donorId)
+        .order('created_at', ascending: false)
+        .map((data) {
+          print(
+            '🟢 [WATCH DONOR CONTRIBUTIONS] Received ${data.length} contributions',
+          );
+          return data.map((json) => FoodRequest.fromJson(json)).toList();
+        });
+  }
+
   Future<List<FoodRequest>> getDonorContributions(String donorId) async {
     final response = await _client
         .from('food_requests')
