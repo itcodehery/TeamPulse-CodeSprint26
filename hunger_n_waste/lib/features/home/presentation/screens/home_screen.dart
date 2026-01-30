@@ -7,6 +7,8 @@ import 'package:geolocator/geolocator.dart';
 
 import '../../../food_requests/presentation/providers/active_requests_provider.dart';
 import '../../../food_requests/domain/models/food_request.dart';
+import '../providers/organizations_provider.dart';
+import '../widgets/organization_card.dart';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -19,15 +21,28 @@ class HomeScreen extends ConsumerStatefulWidget {
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   final MapController _mapController = MapController();
+  final TextEditingController _searchController = TextEditingController();
 
   LatLng? _currentPosition;
   bool _isMapReady = false;
   bool _hasMovedToUser = false;
+  String _searchQuery = '';
 
   @override
   void initState() {
     super.initState();
     _checkPermissionsAndGetLocation();
+    _searchController.addListener(() {
+      setState(() {
+        _searchQuery = _searchController.text.toLowerCase();
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   Future<void> _checkPermissionsAndGetLocation() async {
@@ -194,6 +209,146 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ],
               ),
             ],
+          ),
+
+          // Organization List Sheet
+          DraggableScrollableSheet(
+            initialChildSize: 0.3,
+            minChildSize: 0.1,
+            maxChildSize: 0.8,
+            builder: (context, scrollController) {
+              return Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(20),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 10,
+                      offset: const Offset(0, -5),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    // Handle bar
+                    Container(
+                      margin: const EdgeInsets.symmetric(vertical: 12),
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[300],
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                    // Search bar
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: TextField(
+                        controller: _searchController,
+                        decoration: InputDecoration(
+                          hintText: 'Search organizations...',
+                          prefixIcon: const Icon(Icons.search),
+                          suffixIcon: _searchQuery.isNotEmpty
+                              ? IconButton(
+                                  icon: const Icon(Icons.clear),
+                                  onPressed: () {
+                                    _searchController.clear();
+                                  },
+                                )
+                              : null,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: Colors.grey[300]!),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: Colors.grey[300]!),
+                          ),
+                          filled: true,
+                          fillColor: Colors.grey[50],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    // Organizations list
+                    Expanded(
+                      child: ref
+                          .watch(allOrganizationsProvider)
+                          .when(
+                            data: (organizations) {
+                              // Filter organizations based on search
+                              final filteredOrgs = organizations.where((org) {
+                                if (_searchQuery.isEmpty) return true;
+                                return org.organizationName
+                                        .toLowerCase()
+                                        .contains(_searchQuery) ||
+                                    org.address.toLowerCase().contains(
+                                      _searchQuery,
+                                    );
+                              }).toList();
+
+                              if (filteredOrgs.isEmpty) {
+                                return Center(
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        Icons.search_off,
+                                        size: 64,
+                                        color: Colors.grey[400],
+                                      ),
+                                      const SizedBox(height: 16),
+                                      Text(
+                                        'No organizations found',
+                                        style: GoogleFonts.poppins(
+                                          fontSize: 16,
+                                          color: Colors.grey[600],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              }
+
+                              return ListView.builder(
+                                controller: scrollController,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                ),
+                                itemCount: filteredOrgs.length,
+                                itemBuilder: (context, index) {
+                                  final org = filteredOrgs[index];
+                                  return OrganizationCard(
+                                    organization: org,
+                                    onTap: () {
+                                      // Move map to organization location if coordinates exist
+                                      if (org.latitude != null &&
+                                          org.longitude != null) {
+                                        _mapController.move(
+                                          LatLng(org.latitude!, org.longitude!),
+                                          15.0,
+                                        );
+                                      }
+                                    },
+                                  );
+                                },
+                              );
+                            },
+                            error: (err, stack) => Center(
+                              child: Text('Error loading organizations: $err'),
+                            ),
+                            loading: () => const Center(
+                              child: CircularProgressIndicator(),
+                            ),
+                          ),
+                    ),
+                  ],
+                ),
+              );
+            },
           ),
 
           // Recenter Button
