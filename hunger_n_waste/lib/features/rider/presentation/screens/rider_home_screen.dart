@@ -10,6 +10,7 @@ import '../../../auth/data/repositories/donor_repository.dart';
 import '../../../auth/data/repositories/organization_repository.dart';
 import '../../../food_requests/data/repositories/food_request_repository.dart';
 import 'package:vibration/vibration.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../auth/domain/models/rider_profile.dart';
 import '../../../food_requests/domain/models/food_request.dart';
 import '../../../../core/services/notification_service.dart';
@@ -174,14 +175,15 @@ class _RiderDashboardContentState
       // Only notify if rider is online
       if (!isAvailable) return;
 
-      next.whenData((orders) {
+      next.whenData((orders) async {
         for (var order in orders) {
           // Only notify for orders we haven't notified about yet
           if (!_notifiedOrderIds.contains(order.id)) {
             _notifiedOrderIds.add(order.id);
 
-            // Don't notify on initial load (when previous is null)
-            if (previous != null) {
+            // Don't notify on initial load (when previous doesn't have data yet)
+            // We check if previous value had data to avoid notification on app start
+            if (previous?.hasValue == true) {
               NotificationService.showStatusNotification(
                 title: 'New Order Available!',
                 body:
@@ -189,8 +191,10 @@ class _RiderDashboardContentState
                 payload: order.id,
               );
 
-              // Buzz for 5 seconds
-              Vibration.vibrate(duration: 5000);
+              // Buzz for 5 seconds logic
+              if (await Vibration.hasVibrator()) {
+                Vibration.vibrate(duration: 5000);
+              }
             }
           }
         }
@@ -420,6 +424,311 @@ class _JobCard extends ConsumerWidget {
     }
   }
 
+  Future<void> _launchMap(double lat, double long) async {
+    final uri = Uri.parse(
+      'https://www.google.com/maps/search/?api=1&query=$lat,$long',
+    );
+    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+      debugPrint('Could not launch $uri');
+    }
+  }
+
+  void _showPickupModal(
+    BuildContext context,
+    WidgetRef ref,
+    double? lat,
+    double? long,
+  ) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) {
+        bool qualityChecked = false;
+        bool packagingChecked = false;
+
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+                left: 24,
+                right: 24,
+                top: 16,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[300],
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.orange[50],
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(
+                          Icons.inventory_2_outlined,
+                          color: Colors.orange,
+                          size: 28,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Pickup Verification',
+                              style: Theme.of(context).textTheme.titleLarge
+                                  ?.copyWith(fontWeight: FontWeight.bold),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Verify order details before pickup',
+                              style: Theme.of(context).textTheme.bodyMedium
+                                  ?.copyWith(color: Colors.grey[600]),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 32),
+
+                  // Checklist
+                  Container(
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.grey[200]!),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Column(
+                      children: [
+                        CheckboxListTile(
+                          title: const Text('Food Quality Verified'),
+                          subtitle: const Text(
+                            'Freshness and temperature check',
+                          ),
+                          value: qualityChecked,
+                          activeColor: Colors.orange,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          onChanged: (val) =>
+                              setState(() => qualityChecked = val!),
+                        ),
+                        const Divider(height: 1),
+                        CheckboxListTile(
+                          title: const Text('Packaging Intact'),
+                          subtitle: const Text('No spills or damages'),
+                          value: packagingChecked,
+                          activeColor: Colors.orange,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          onChanged: (val) =>
+                              setState(() => packagingChecked = val!),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+
+                  const Text(
+                    'Proof of Pickup',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 12),
+                  OutlinedButton.icon(
+                    onPressed: null, // Disabled for now
+                    icon: const Icon(Icons.camera_alt_outlined),
+                    label: const Text('Capture Photo (Coming Soon)'),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      side: BorderSide(color: Colors.grey[300]!),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+                  FilledButton(
+                    onPressed: (qualityChecked && packagingChecked)
+                        ? () {
+                            Navigator.pop(context);
+                            _updateStatus(context, ref, 'in_transit');
+                          }
+                        : null,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: Colors.orange,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 0,
+                    ),
+                    child: const Text(
+                      'CONFIRM PICKUP',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showDeliveryModal(
+    BuildContext context,
+    WidgetRef ref,
+    double? lat,
+    double? long,
+  ) {
+    final nameController = TextEditingController();
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) {
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+            left: 24,
+            right: 24,
+            top: 16,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.green[50],
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.check_circle_outline,
+                      color: Colors.green,
+                      size: 28,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Delivery Handover',
+                          style: Theme.of(context).textTheme.titleLarge
+                              ?.copyWith(fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Confirm receiver details',
+                          style: Theme.of(context).textTheme.bodyMedium
+                              ?.copyWith(color: Colors.grey[600]),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 32),
+
+              TextField(
+                controller: nameController,
+                decoration: InputDecoration(
+                  labelText: 'Receiver Name',
+                  hintText: 'Who received the order?',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  prefixIcon: const Icon(Icons.person_outline),
+                  filled: true,
+                  fillColor: Colors.grey[50],
+                ),
+              ),
+              const SizedBox(height: 24),
+              const Text(
+                'Proof of Delivery',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                onPressed: null, // Disabled
+                icon: const Icon(Icons.camera_alt_outlined),
+                label: const Text('Capture Photo (Coming Soon)'),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  side: BorderSide(color: Colors.grey[300]!),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 32),
+              FilledButton(
+                onPressed: () {
+                  if (nameController.text.isNotEmpty) {
+                    Navigator.pop(context);
+                    _updateStatus(context, ref, 'completed');
+                  }
+                },
+                style: FilledButton.styleFrom(
+                  backgroundColor: Colors.green,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  elevation: 0,
+                ),
+                child: const Text(
+                  'CONFIRM DELIVERY',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final status = job['status'] as String;
@@ -427,162 +736,342 @@ class _JobCard extends ConsumerWidget {
     final donorId = job['donor_id'] as String?;
 
     final orgAsync = ref.watch(organizationProfileProvider(orgId));
-    // If no donor assigned yet (shouldn't happen for active jobs), skip
     final donorAsync = donorId != null
         ? ref.watch(donorProfileProvider(donorId))
-        : const AsyncValue<dynamic>.data(
-            null,
-          ); // dynamic to match Option type? Actually Option handles nulls.
+        : const AsyncValue<dynamic>.data(null);
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 16),
-      elevation: 3,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    // Dynamic Colors based on status
+    final isPending = status == 'pending_pickup';
+    final primaryColor = isPending ? Colors.orange : Colors.green;
+    final statusText = isPending ? 'PICKUP PENDING' : 'IN TRANSIT';
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 20, left: 16, right: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          // Header with Status
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: primaryColor.withOpacity(0.1),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(20),
+              ),
+            ),
+            child: Row(
               children: [
-                Chip(
-                  label: Text(
-                    status.toUpperCase().replaceAll('_', ' '),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: primaryColor,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    statusText,
                     style: const TextStyle(
                       color: Colors.white,
-                      fontSize: 12,
+                      fontSize: 10,
                       fontWeight: FontWeight.bold,
+                      letterSpacing: 0.5,
                     ),
                   ),
-                  backgroundColor: status == 'pending_pickup'
-                      ? Colors.orange
-                      : Colors.blue,
                 ),
+                const Spacer(),
+                Icon(
+                  Icons.inventory_2_outlined,
+                  size: 16,
+                  color: Colors.grey[700],
+                ),
+                const SizedBox(width: 4),
                 Text(
                   'Qty: ${job['quantity']}',
-                  style: const TextStyle(fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey[800],
+                  ),
                 ),
               ],
             ),
-            const SizedBox(height: 12),
-            Text(
-              'Food: ${job['food_type']}',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const Divider(height: 24),
+          ),
 
-            // Pickup Info (Donor)
-            _buildLocationRow(
-              context,
-              icon: Icons.upload,
-              title: 'PICKUP (Donor)',
-              asyncValue: donorAsync,
-              isDonor: true,
-            ),
-            const SizedBox(height: 16),
-
-            // Dropoff Info (Org)
-            _buildLocationRow(
-              context,
-              icon: Icons.download,
-              title: 'DROPOFF (Organization)',
-              asyncValue: orgAsync,
-              isDonor: false,
-            ),
-
-            const SizedBox(height: 24),
-
-            // Actions
-            if (status == 'pending_pickup')
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton.icon(
-                  onPressed: () => _updateStatus(context, ref, 'in_transit'),
-                  icon: const Icon(Icons.local_shipping),
-                  label: const Text('RECEIVED FOOD CARGO'),
-                  style: FilledButton.styleFrom(backgroundColor: Colors.orange),
+          Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Food Title
+                Text(
+                  job['food_type'],
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey[900],
+                  ),
                 ),
-              ),
+                const SizedBox(height: 24),
 
-            if (status == 'in_transit')
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton.icon(
-                  onPressed: () => _updateStatus(context, ref, 'completed'),
-                  icon: const Icon(Icons.done_all),
-                  label: const Text('CONFIRM DELIVERY'),
-                  style: FilledButton.styleFrom(backgroundColor: Colors.green),
+                // Timeline View
+                _buildTimelineStep(
+                  context,
+                  title: 'PICKUP',
+                  asyncValue: donorAsync,
+                  isDonor: true,
+                  isActive: isPending,
+                  isLast: false,
                 ),
-              ),
-          ],
-        ),
+                _buildTimelineStep(
+                  context,
+                  title: 'DROPOFF',
+                  asyncValue: orgAsync,
+                  isDonor: false,
+                  isActive: !isPending, // Active if in transit
+                  isLast: true,
+                ),
+
+                const SizedBox(height: 24),
+                const Divider(),
+                const SizedBox(height: 16),
+
+                // Actions
+                if (status == 'pending_pickup') ...[
+                  Row(
+                    children: [
+                      _buildNavigateButton(context, donorAsync, Colors.orange),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        flex: 2,
+                        child: FilledButton.icon(
+                          onPressed: () =>
+                              _showPickupModal(context, ref, null, null),
+                          icon: const Icon(Icons.check_circle_outline),
+                          label: const Text('Start Pickup'),
+                          style: FilledButton.styleFrom(
+                            backgroundColor: Colors.orange,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            elevation: 0,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+
+                if (status == 'in_transit') ...[
+                  Row(
+                    children: [
+                      _buildNavigateButton(context, orgAsync, Colors.green),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        flex: 2,
+                        child: FilledButton.icon(
+                          onPressed: () =>
+                              _showDeliveryModal(context, ref, null, null),
+                          icon: const Icon(Icons.done_all),
+                          label: const Text('Complete Delivery'),
+                          style: FilledButton.styleFrom(
+                            backgroundColor: Colors.green,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            elevation: 0,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildLocationRow(
+  Widget _buildNavigateButton(
+    BuildContext context,
+    AsyncValue locationAsync,
+    Color color,
+  ) {
+    return Container(
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: IconButton(
+        onPressed: () {
+          locationAsync.whenData((data) {
+            if (data != null) {
+              try {
+                final d = data as dynamic;
+                final lat =
+                    d.defaultLatitude ??
+                    d.latitude; // handle both models loosely
+                final long = d.defaultLongitude ?? d.longitude;
+
+                if (lat != null && long != null) {
+                  _launchMap(lat, long);
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Location not available')),
+                  );
+                }
+              } catch (e) {
+                debugPrint('Error: $e');
+              }
+            }
+          });
+        },
+        icon: Icon(Icons.navigation_outlined, color: color),
+        tooltip: 'Navigate',
+        style: IconButton.styleFrom(padding: const EdgeInsets.all(12)),
+      ),
+    );
+  }
+
+  Widget _buildTimelineStep(
     BuildContext context, {
-    required IconData icon,
     required String title,
     required AsyncValue asyncValue,
     required bool isDonor,
+    required bool isActive,
+    required bool isLast,
   }) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(icon, color: Colors.grey[600], size: 20),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Timeline indicator
+          Column(
             children: [
-              Text(
-                title,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey[600],
-                  fontWeight: FontWeight.bold,
+              Container(
+                width: 12,
+                height: 12,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: isActive
+                      ? (isDonor ? Colors.orange : Colors.green)
+                      : Colors.grey[300],
+                  border: isActive
+                      ? null
+                      : Border.all(color: Colors.grey[400]!, width: 2),
                 ),
               ),
-              const SizedBox(height: 4),
-              asyncValue.when(
-                data: (data) {
-                  // data is Option.value or Option.none likely?
-                  // Wait, I declared providers as .option? No, I declared generic .family
-                  // Let's assume standard object return or null.
-                  if (data == null) return const Text('Loading details...');
-
-                  if (isDonor) {
-                    // Cast to DonorProfile? Since riverpod generic types are tricky without proper casting
-                    // I will rely on dynamic for now or fix types in provider definition.
-                    // Accessing fields dynamically:
-                    // Assuming standard Access.
-                    // Safe way: cast to dynamic then look up.
-                    final d = data;
-                    return Text(d.defaultAddress ?? 'Unknown Donor Address');
-                  } else {
-                    final o = data;
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          o.organizationName,
-                          style: const TextStyle(fontWeight: FontWeight.w600),
-                        ),
-                        Text(o.address),
-                      ],
-                    );
-                  }
-                },
-                loading: () => const Text('Loading...'),
-                error: (_, __) => const Text('Failed to load'),
-              ),
+              if (!isLast)
+                Expanded(
+                  child: Container(
+                    width: 2,
+                    color: Colors.grey[200],
+                    margin: const EdgeInsets.symmetric(vertical: 4),
+                  ),
+                ),
             ],
           ),
-        ),
-      ],
+          const SizedBox(width: 16),
+
+          // Content
+          Expanded(
+            child: Padding(
+              padding: EdgeInsets.only(bottom: isLast ? 0 : 24.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: isActive ? Colors.black87 : Colors.grey[500],
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  asyncValue.when(
+                    data: (data) {
+                      if (data == null)
+                        return Text(
+                          'Loading info...',
+                          style: TextStyle(color: Colors.grey[400]),
+                        );
+
+                      if (isDonor) {
+                        final d = data as dynamic;
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'From Donor',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            Text(
+                              d.defaultAddress ?? 'No Address',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: Colors.grey[600],
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        );
+                      } else {
+                        final o = data as dynamic;
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              o.organizationName,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            Text(
+                              o.address,
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: Colors.grey[600],
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        );
+                      }
+                    },
+                    loading: () => Container(
+                      width: 100,
+                      height: 10,
+                      color: Colors.grey[100],
+                    ),
+                    error: (_, __) => const Text('Error loading info'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -669,6 +1158,9 @@ class _AvailableOrderCardState extends ConsumerState<_AvailableOrderCard> {
                 onPressed: _isLoading
                     ? null
                     : () async {
+                        // Cancel any ongoing vibration when user interacts
+                        Vibration.cancel();
+
                         setState(() {
                           _isLoading = true;
                           _isAccepted = true; // Optimistic update
@@ -685,7 +1177,7 @@ class _AvailableOrderCardState extends ConsumerState<_AvailableOrderCard> {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
                                 content: Text(
-                                  'Order Accepted! Added to Active Jobs.',
+                                  'Order Accepted! Proceed to Pickup.',
                                 ),
                                 backgroundColor: Colors.green,
                               ),
@@ -716,7 +1208,7 @@ class _AvailableOrderCardState extends ConsumerState<_AvailableOrderCard> {
                         ),
                       )
                     : const Icon(Icons.check_circle, size: 18),
-                label: Text(_isLoading ? 'Accepting...' : 'Accept Order'),
+                label: Text(_isLoading ? 'Accepting...' : 'Accept & Pickup'),
                 style: FilledButton.styleFrom(
                   backgroundColor: Theme.of(context).primaryColor,
                 ),
