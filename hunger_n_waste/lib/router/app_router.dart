@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../features/home/presentation/screens/home_screen.dart';
+import '../features/home/presentation/screens/universal_home_screen.dart'; // Import Universal Home
 import '../features/auth/presentation/screens/login_screen.dart';
 
 import '../features/profile/presentation/screens/profile_screen.dart';
@@ -11,8 +11,7 @@ import '../features/auth/presentation/screens/user_type_selection_screen.dart';
 import '../features/auth/presentation/screens/donor_registration_screen.dart';
 import '../features/auth/presentation/screens/organization_registration_screen.dart';
 import '../features/auth/presentation/screens/rider_registration_screen.dart';
-import '../features/food_requests/presentation/screens/organization_home_screen.dart';
-import '../features/rider/presentation/screens/rider_home_screen.dart';
+// Org and Rider homes are now handled by UniversalHomeScreen
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'auth_state_notifier.dart';
 
@@ -42,33 +41,13 @@ final routerProvider = Provider<GoRouter>((ref) {
         return '/login';
       }
 
-      // If logged in and on login/auth pages, redirect to appropriate home
+      // If logged in and on login/auth pages, redirect to home
       if (isLoggedIn && isLoggingIn) {
-        try {
-          final userId = session.user.id;
-          final profileResponse = await supabase
-              .from('profiles')
-              .select('user_type')
-              .eq('id', userId)
-              .maybeSingle();
-
-          if (profileResponse != null) {
-            final userType = profileResponse['user_type'] as String;
-            if (userType == 'organization') {
-              return '/organization-home';
-            } else if (userType == 'rider') {
-              return '/rider-home';
-            } else {
-              return '/home';
-            }
-          }
-        } catch (e) {
-          // If error fetching profile, go to home
-          return '/home';
-        }
+        return '/home';
       }
 
-      return null; // No redirect needed
+      // No complex checks needed here. UniversalHomeScreen handles user types.
+      return null;
     },
     routes: [
       StatefulShellRoute.indexedStack(
@@ -80,7 +59,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             routes: [
               GoRoute(
                 path: '/home',
-                builder: (context, state) => const HomeScreen(),
+                builder: (context, state) => const UniversalHomeScreen(),
               ),
             ],
           ),
@@ -119,14 +98,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/auth/register/rider',
         builder: (context, state) => const RiderRegistrationScreen(),
       ),
-      GoRoute(
-        path: '/organization-home',
-        builder: (context, state) => const OrganizationHomeScreen(),
-      ),
-      GoRoute(
-        path: '/rider-home',
-        builder: (context, state) => const RiderHomeScreen(),
-      ),
+      // Individual Home Routes removed as they are now wrapped in /home
     ],
   );
 });

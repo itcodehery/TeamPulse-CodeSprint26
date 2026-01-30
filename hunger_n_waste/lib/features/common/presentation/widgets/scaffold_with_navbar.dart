@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../auth/presentation/providers/user_role_provider.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../auth/domain/models/user_enums.dart';
 
 class ScaffoldWithNavBar extends ConsumerWidget {
   final StatefulNavigationShell navigationShell;
@@ -18,8 +19,9 @@ class ScaffoldWithNavBar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final roleAsync = ref.watch(currentUserRoleProvider);
-    final isDonor = roleAsync.asData?.value == 'donor';
+    final authState = ref.watch(authProvider);
+    final user = authState.user;
+    final userType = user?.userType ?? UserType.donor;
 
     return Scaffold(
       body: navigationShell,
@@ -31,17 +33,24 @@ class ScaffoldWithNavBar extends ConsumerWidget {
             selectedIcon: Icon(Icons.home),
             label: 'Home',
           ),
-          if (isDonor)
+          if (userType == UserType.donor)
             const NavigationDestination(
               icon: Icon(Icons.volunteer_activism_outlined),
               selectedIcon: Icon(Icons.volunteer_activism),
               label: 'Contributions',
             )
-          else
+          else if (userType == UserType.organization)
             const NavigationDestination(
               icon: Icon(Icons.add_circle_outline),
               selectedIcon: Icon(Icons.add_circle),
               label: 'Add',
+            )
+          else
+            // Rider or default: Show History/Activity
+            const NavigationDestination(
+              icon: Icon(Icons.history_outlined),
+              selectedIcon: Icon(Icons.history),
+              label: 'History',
             ),
           const NavigationDestination(
             icon: Icon(Icons.person_outline),
