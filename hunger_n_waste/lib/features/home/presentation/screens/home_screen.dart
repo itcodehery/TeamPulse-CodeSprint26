@@ -136,11 +136,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         data: (requests) {
                           return requests
                               .map((req) {
-                                // Use Org location if available
-                                final lat = req.organization?.latitude;
-                                final long = req.organization?.longitude;
+                                // Use request's own location (from food_requests table)
+                                final lat = req.latitude;
+                                final long = req.longitude;
 
-                                if (lat == null || long == null) return null;
+                                // Skip if location is invalid
+                                if (lat == 0 && long == 0) return null;
 
                                 return Marker(
                                   key: ValueKey(req.id),
