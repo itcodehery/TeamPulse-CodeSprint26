@@ -4,7 +4,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:go_router/go_router.dart'; // For logout or nav
 import '../../data/repositories/food_request_repository.dart';
 import '../../domain/models/food_request.dart';
-import '../widgets/add_request_dialog.dart';
 
 class OrganizationHomeScreen extends ConsumerStatefulWidget {
   const OrganizationHomeScreen({super.key});
@@ -79,10 +78,7 @@ class _OrganizationHomeScreenState
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
-          showDialog(
-            context: context,
-            builder: (_) => AddRequestDialog(orgId: orgId),
-          );
+          context.go('/add');
         },
         label: const Text('New Request'),
         icon: const Icon(Icons.add),
