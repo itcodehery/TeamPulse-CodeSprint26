@@ -584,7 +584,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           ),
                           elevation: 0,
                         ),
-                        onPressed: () => _donateAndFulfill(req),
+                        onPressed: () => _showLocationPickerDialog(req),
                         child: const Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
@@ -690,7 +690,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       // TODO: Update this to pass the pickup location to the repository
       await ref
           .read(foodRequestRepositoryProvider)
-          .fulfillRequest(requestId: req.id, donorId: user.id);
+          .fulfillRequest(
+            requestId: req.id,
+            donorId: user.id,
+            pickupLocation: pickupLocation,
+          );
 
       // 4. Refresh List
       // ignore: unused_result

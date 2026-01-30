@@ -89,16 +89,9 @@ class FoodRequestRepository {
   Future<void> fulfillRequest({
     required String requestId,
     required String donorId,
+    required LatLng pickupLocation,
   }) async {
-    // 1. Get the Request details to know the Pickup Location
-    final requestData = await _client
-        .from('food_requests')
-        .select('latitude, longitude')
-        .eq('id', requestId)
-        .single();
-
-    final double requestLat = requestData['latitude'];
-    final double requestLong = requestData['longitude'];
+    // 1. (Removed) We use the provided Pickup Location instead of Request Location
 
     // 2. Fetch all Available Riders
     final availableRidersData = await _client
@@ -113,8 +106,8 @@ class FoodRequestRepository {
     String? assignedRiderId;
 
     if (riders.isNotEmpty) {
-      // 3. Find Request Location
-      final requestLoc = LatLng(requestLat, requestLong);
+      // 3. Find Request Location (Use Pickup Location)
+      final requestLoc = pickupLocation;
       const distance = Distance();
 
       // 4. Sort by Distance
