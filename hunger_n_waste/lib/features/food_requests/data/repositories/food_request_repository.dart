@@ -88,6 +88,22 @@ class FoodRequestRepository {
         });
   }
 
+  // Stream for available orders (pending pickup) for riders
+  Stream<List<FoodRequest>> watchAvailableOrders() {
+    print(
+      '🔵 [WATCH AVAILABLE ORDERS] Setting up stream for pending_pickup orders',
+    );
+    return _client
+        .from('food_requests')
+        .stream(primaryKey: ['id'])
+        .eq('status', 'pending_pickup')
+        .order('created_at', ascending: false)
+        .map((data) {
+          print('🟢 [WATCH AVAILABLE ORDERS] Received ${data.length} orders');
+          return data.map((json) => FoodRequest.fromJson(json)).toList();
+        });
+  }
+
   Future<List<FoodRequest>> getActiveRequests() async {
     final response = await _client
         .from('food_requests')

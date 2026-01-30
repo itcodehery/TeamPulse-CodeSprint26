@@ -1,12 +1,16 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:geolocator/geolocator.dart';
 import '../../../auth/data/repositories/rider_repository.dart';
 import '../../../auth/data/repositories/donor_repository.dart';
 import '../../../auth/data/repositories/organization_repository.dart';
 import '../../../food_requests/data/repositories/food_request_repository.dart';
 import '../../../auth/domain/models/rider_profile.dart';
+import '../../../food_requests/domain/models/food_request.dart';
 
 // --- Providers ---
 
@@ -23,6 +27,11 @@ final riderActiveJobsStreamProvider =
       final user = Supabase.instance.client.auth.currentUser;
       if (user == null) return Stream.value([]);
       return ref.watch(riderRepositoryProvider).watchActiveJobs(user.id);
+    });
+
+final availableOrdersStreamProvider =
+    StreamProvider.autoDispose<List<FoodRequest>>((ref) {
+      return ref.watch(foodRequestRepositoryProvider).watchAvailableOrders();
     });
 
 final donorProfileProvider = FutureProvider.autoDispose.family<dynamic, String>(
@@ -69,14 +78,93 @@ class RiderHomeScreen extends ConsumerWidget {
   }
 }
 
-class _RiderDashboardContent extends ConsumerWidget {
+class _RiderDashboardContent extends ConsumerStatefulWidget {
   final RiderProfile profile;
 
   const _RiderDashboardContent({required this.profile});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final isAvailable = profile.isAvailable;
+  ConsumerState<_RiderDashboardContent> createState() =>
+      _RiderDashboardContentState();
+}
+
+class _RiderDashboardContentState
+    extends ConsumerState<_RiderDashboardContent> {
+  Timer? _locationTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    // Start location tracking if rider is already online
+    if (widget.profile.isAvailable) {
+      _startLocationTracking();
+    }
+  }
+
+  @override
+  void didUpdateWidget(_RiderDashboardContent oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Handle availability changes
+    if (widget.profile.isAvailable != oldWidget.profile.isAvailable) {
+      if (widget.profile.isAvailable) {
+        _startLocationTracking();
+      } else {
+        _stopLocationTracking();
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _stopLocationTracking();
+    super.dispose();
+  }
+
+  void _startLocationTracking() {
+    debugPrint('🚀 Starting location tracking');
+    _updateLocation(); // Update immediately
+    _locationTimer?.cancel(); // Cancel any existing timer
+    _locationTimer = Timer.periodic(const Duration(minutes: 4), (_) {
+      _updateLocation();
+    });
+  }
+
+  void _stopLocationTracking() {
+    debugPrint('🛑 Stopping location tracking');
+    _locationTimer?.cancel();
+    _locationTimer = null;
+  }
+
+  Future<void> _updateLocation() async {
+    try {
+      debugPrint('📍 Getting current location...');
+      final position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      );
+
+      debugPrint(
+        '📍 Location obtained: ${position.latitude}, ${position.longitude}',
+      );
+
+      await ref
+          .read(riderRepositoryProvider)
+          .updateLocation(
+            widget.profile.id,
+            position.latitude,
+            position.longitude,
+          );
+
+      debugPrint('✅ Location updated in database');
+    } catch (e) {
+      debugPrint('❌ Error updating location: $e');
+      // Don't show error to user, just log it
+      // Location updates are background operations
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isAvailable = widget.profile.isAvailable;
 
     return Padding(
       padding: const EdgeInsets.all(16.0),
@@ -114,7 +202,7 @@ class _RiderDashboardContent extends ConsumerWidget {
                     debugPrint('🎯 Toggle switched to: $val');
                     await ref
                         .read(riderRepositoryProvider)
-                        .updateAvailability(profile.id, val);
+                        .updateAvailability(widget.profile.id, val);
 
                     // Force refresh the stream provider to get updated data
                     debugPrint(
@@ -149,6 +237,60 @@ class _RiderDashboardContent extends ConsumerWidget {
                 },
               ),
             ),
+          ),
+
+          const SizedBox(height: 24),
+
+          // Available Orders Section
+          const Text(
+            'Available Orders',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 12),
+
+          Consumer(
+            builder: (context, ref, _) {
+              final ordersAsync = ref.watch(availableOrdersStreamProvider);
+
+              return ordersAsync.when(
+                data: (orders) {
+                  if (orders.isEmpty) {
+                    return Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Center(
+                          child: Text(
+                            'No available orders at the moment',
+                            style: TextStyle(color: Colors.grey[600]),
+                          ),
+                        ),
+                      ),
+                    );
+                  }
+
+                  return SizedBox(
+                    height: 180,
+                    child: ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: orders.length,
+                      itemBuilder: (context, index) {
+                        return _AvailableOrderCard(order: orders[index]);
+                      },
+                    ),
+                  );
+                },
+                loading: () => const SizedBox(
+                  height: 180,
+                  child: Center(child: CircularProgressIndicator()),
+                ),
+                error: (err, stack) => Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Text('Error loading orders: $err'),
+                  ),
+                ),
+              );
+            },
           ),
 
           const SizedBox(height: 24),
@@ -402,6 +544,91 @@ class _JobCard extends ConsumerWidget {
           ),
         ),
       ],
+    );
+  }
+}
+// Available Order Card Widget
+class _AvailableOrderCard extends StatelessWidget {
+  final FoodRequest order;
+
+  const _AvailableOrderCard({required this.order});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: const EdgeInsets.only(right: 12),
+      elevation: 2,
+      child: Container(
+        width: 280,
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.restaurant, color: Theme.of(context).primaryColor),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    order.foodType,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Icon(Icons.people, size: 16, color: Colors.grey[600]),
+                const SizedBox(width: 4),
+                Text(
+                  '${order.quantity} servings',
+                  style: TextStyle(color: Colors.grey[700]),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                Icon(Icons.business, size: 16, color: Colors.grey[600]),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: Text(
+                    order.organization?.organizationName ?? 'Organization',
+                    style: TextStyle(color: Colors.grey[700]),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+            const Spacer(),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: () {
+                  // TODO: Implement accept order logic
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Accept order feature coming soon!'),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.check_circle, size: 18),
+                label: const Text('Accept Order'),
+                style: FilledButton.styleFrom(
+                  backgroundColor: Theme.of(context).primaryColor,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

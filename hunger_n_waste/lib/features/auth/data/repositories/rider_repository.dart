@@ -60,6 +60,32 @@ class RiderRepository {
     }
   }
 
+  Future<void> updateLocation(
+    String id,
+    double latitude,
+    double longitude,
+  ) async {
+    try {
+      debugPrint(
+        '📍 Updating rider location: id=$id, lat=$latitude, lng=$longitude',
+      );
+
+      await _client
+          .from('rider_profiles')
+          .update({
+            'current_latitude': latitude,
+            'current_longitude': longitude,
+          })
+          .eq('id', id);
+
+      debugPrint('✅ Location update successful');
+    } catch (e, stackTrace) {
+      debugPrint('❌ Error updating location: $e');
+      debugPrint('Stack trace: $stackTrace');
+      rethrow;
+    }
+  }
+
   Stream<RiderProfile?> watchProfile(String id) {
     debugPrint('📡 Setting up stream for rider: $id');
     return _client
