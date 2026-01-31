@@ -17,6 +17,63 @@ class OrganizationHomeScreen extends ConsumerStatefulWidget {
 class _OrganizationHomeScreenState
     extends ConsumerState<OrganizationHomeScreen> {
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _showFreeTrialSnackbar();
+      }
+    });
+  }
+
+  void _showFreeTrialSnackbar() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(
+              Icons.volunteer_activism_rounded,
+              color: Colors.white,
+              size: 24,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Free Trial Active',
+                    style: GoogleFonts.outfit(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                      color: Colors.white,
+                    ),
+                  ),
+                  Text(
+                    'Help the needy by finding surplus food nearby.',
+                    style: GoogleFonts.outfit(
+                      fontSize: 12,
+                      color: Colors.white.withOpacity(0.9),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: const Color(0xFF1565C0),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        margin: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        duration: const Duration(seconds: 5),
+        elevation: 6,
+      ),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
     final user = Supabase.instance.client.auth.currentUser;
     if (user == null) {
