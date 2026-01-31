@@ -157,7 +157,7 @@ class RiderHistoryScreen extends ConsumerWidget {
                           ),
                           const SizedBox(width: 8),
                           Text(
-                            '${delivery['quantity']} people fed',
+                            '${delivery['quantity'] ?? 0} people fed',
                             style: GoogleFonts.outfit(
                               fontSize: 14,
                               color: Colors.grey[600],
@@ -169,10 +169,14 @@ class RiderHistoryScreen extends ConsumerWidget {
                       const Divider(height: 1),
                       const SizedBox(height: 12),
                       Text(
-                        DateFormat.yMMMd()
-                            .add_jm()
-                            .format(DateTime.parse(delivery['created_at']))
-                            .toUpperCase(),
+                        delivery['created_at'] != null
+                            ? DateFormat.yMMMd()
+                                  .add_jm()
+                                  .format(
+                                    DateTime.parse(delivery['created_at']),
+                                  )
+                                  .toUpperCase()
+                            : 'DATE UNKNOWN',
                         style: GoogleFonts.outfit(
                           fontSize: 11,
                           fontWeight: FontWeight.bold,

@@ -15,6 +15,8 @@ import 'package:url_launcher/url_launcher.dart';
 import 'dart:io';
 import 'location_camera_screen.dart';
 import '../../../auth/domain/models/rider_profile.dart';
+import '../../../auth/domain/models/donor_profile.dart';
+import '../../../auth/domain/models/organization_profile.dart';
 import '../../../food_requests/domain/models/food_request.dart';
 import '../../../../core/services/notification_service.dart';
 
@@ -1305,9 +1307,20 @@ class _JobCard extends ConsumerWidget {
           locationAsync?.whenData((data) {
             if (data != null) {
               try {
-                final d = data as dynamic;
-                final lat = d.defaultLatitude ?? d.latitude;
-                final long = d.defaultLongitude ?? d.longitude;
+                double? lat;
+                double? long;
+
+                if (data is OrganizationProfile) {
+                  lat = data.latitude;
+                  long = data.longitude;
+                } else if (data is DonorProfile) {
+                  lat = data.defaultLatitude;
+                  long = data.defaultLongitude;
+                } else {
+                  final d = data as dynamic;
+                  lat = d.defaultLatitude ?? d.latitude;
+                  long = d.defaultLongitude ?? d.longitude;
+                }
 
                 if (lat != null && long != null) {
                   _launchMap(lat, long);
