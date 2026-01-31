@@ -1,67 +1,59 @@
-# Hunger N Waste - Team Pulse
 
-**Team Pulse** | **CHRIST (Deemed to be University), Central Campus**
 **Problem Statement ID:** CS01SW
 
-## 📖 Overview
+**Team Name:** Team Pulse
 
-**Hunger N Waste** is a digital platform designed to bridge the gap between surplus food sources and NGOs. By leveraging real-time location services, the application connects donors with verified organizations to facilitate the efficient redistribution of food, effectively reducing food waste while aiding hunger relief efforts.
+**College Name:** CHRIST (Deemed to be University), Central Campus
 
-## 🚀 Problem & Solution
-
-### The Problem
+## Problem Statement
 Food waste and hunger are two simultaneous global crises. While massive amounts of food are discarded daily, many communities struggle with food insecurity. The lack of a streamlined logistics network makes it difficult to transfer surplus food to those in need quickly and safely.
 
-### Our Solution
-We propose a mobile application that:
+## Proposed Solution
+HappyMeal is a digital platform designed to bridge the gap between surplus food sources and NGOs. By leveraging real-time location services, the application connects donors with verified organizations to facilitate the efficient redistribution of food.
+Our mobile application:
 - **Connects** donors (Caterers, Event Organizers, Individuals) with nearby verified NGOs.
 - **Facilitates** real-time pickup requests for surplus food.
 - **Assigns** riders for collection and delivery.
 - **Ensures** a transparent, quick, and efficient redistribution workflow.
 
-## ✨ Key Features
+## Innovation & Creativity
+- **Real-Time Surplus Logistics**: Unlike static directories, our app facilitates dynamic, real-time pickup and delivery of perishable goods using geolocation.
+- **Role-Based Ecosystem**: Integrates three distinct user roles (Donor, NGO, Rider) into a single cohesive ecosystem.
+- **Automated Rider Assignment**: Smart assignment logic ensures the nearest available rider is tasked with the pickup, minimizing food spoilage risk.
 
-### 🍎 For Donors
-- **Discovery**: View active food requests from NGOs on an interactive map.
-- **Instant Donation**: Select a request and offer surplus food with a few taps.
-- **Impact Tracking**: Gamification features like reward points and milestones to encourage regular contributions.
+## Technical Complexity & Stack
+This project leverages a modern, cross-platform tech stack to ensure performance and scalability:
 
-### 🏢 For Organizations (NGOs)
-- **Request Creation**: Broadcast specific food needs (e.g., "Feeding 50 people") to the community.
-- **Verification**: Verified profiles to ensure trust and safety.
-- **History**: Track received donations and impact.
+- **Mobile Framework**: Flutter (SDK ^3.10.4) - For a high-performance, cross-platform (iOS/Android) user interface.
+- **Backend & Database**: Supabase - Utilized for PostgreSQL database, Authentication, and Realtime subscriptions.
+- **State Management**: flutter_riverpod - For robust and scalable application state management.
+- **Maps & Location Services**: 
+  - `flutter_map` & `latlong2`: For rendering interactive maps.
+  - `geolocator`: For real-time user location tracking.
+- **Routing**: go_router - For declarative and deep-linkable navigation.
+- **Notifications**: flutter_local_notifications - For local user alerts.
+- **Architecture**: Feature-first architecture ensuring modularity and maintainability.
 
-### 🛵 For Riders
-- **Automated Assignment**: Receive delivery tasks based on proximity.
-- **Delivery Workflow**: Simple "Pick Up" and "Drop Off" status updates.
-- **Navigation**: Integrated maps for efficient routing.
+## Usability & Impact
+**Users:**
+1.  **Donors**: Individuals, restaurants, or event organizers who have surplus food.
+2.  **NGOs**: Verified non-profit organizations seeking food for their beneficiaries.
+3.  **Riders**: Volunteers or logistics partners who transport the food.
 
-## 🛠️ Tech Stack
+**Interaction:**
+- Donors view active requests on a map and offer food with a few taps.
+- NGOs broadcast specific needs (e.g., "Lunch for 50") and verify incoming donations.
+- Riders receive automated delivery tasks based on proximity to the donor.
 
-- **Framework**: [Flutter](https://flutter.dev/) (SDK ^3.10.4)
-- **Backend & Database**: [Supabase](https://supabase.com/) (PostgreSQL, Auth, Realtime)
-- **State Management**: [Riverpod](https://riverpod.dev/)
-- **Maps & Location**: `flutter_map`, `latlong2`, `geolocator`
-- **Routing**: `go_router`
-- **Notifications**: `flutter_local_notifications`
+**Impact:**
+- **Social**: Directly alleviates hunger in local communities by routing excess food to where it's needed most.
+- **Environmental**: Reduces food waste, thereby lowering the carbon footprint associated with decomposing organic waste in landfills.
 
-## 📂 Project Structure
-
-The project follows a feature-first architecture:
-
-```
-lib/
-├── core/            # Core utilities, theme, and shared widgets
-├── features/        # Feature-specific code (Auth, Donor, Organization, Rider)
-├── router/          # App navigation configuration
-└── main.dart        # Application entry point
-```
-
-## ⚙️ Setup Instructions
+## Setup Instructions
 
 ### Prerequisites
-- Flutter SDK installed and configured.
-- A Supabase project set up.
+- [Flutter SDK](https://docs.flutter.dev/get-started/install) installed and configured.
+- A [Supabase](https://supabase.com/) project set up.
 
 ### Installation
 
@@ -92,6 +84,5 @@ lib/
     flutter run
     ```
 
-## 🤝 Contribution
-
-This project was built by **Team Pulse** for CodeSprint '26.
+## Presentation/Demo Link (Optional)
+https://www.canva.com/design/DAG_6F8yvZE/jRHUYZon5fQ9f1FXYvJ6Ow/view?utm_content=DAG_6F8yvZE&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=ha19d8485f9
