@@ -94,6 +94,7 @@ class _LocationCameraScreenState extends State<LocationCameraScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final topPadding = MediaQuery.of(context).padding.top;
     return Scaffold(
       backgroundColor: Colors.black,
       body: FutureBuilder<void>(
@@ -107,14 +108,14 @@ class _LocationCameraScreenState extends State<LocationCameraScreen> {
                 // Camera Preview
                 CameraPreview(_controller!),
 
-                // Overlay Gradient for better text visibility
+                // Overlay Gradient
                 Positioned(
                   top: 0,
                   left: 0,
                   right: 0,
                   height: 120,
                   child: Container(
-                    decoration: BoxDecoration(
+                    decoration: const BoxDecoration(
                       gradient: LinearGradient(
                         colors: [Colors.black54, Colors.transparent],
                         begin: Alignment.topCenter,
@@ -130,7 +131,7 @@ class _LocationCameraScreenState extends State<LocationCameraScreen> {
                   right: 0,
                   height: 180,
                   child: Container(
-                    decoration: BoxDecoration(
+                    decoration: const BoxDecoration(
                       gradient: LinearGradient(
                         colors: [Colors.transparent, Colors.black87],
                         begin: Alignment.topCenter,
@@ -140,9 +141,9 @@ class _LocationCameraScreenState extends State<LocationCameraScreen> {
                   ),
                 ),
 
-                // Top Bar with Back Button
+                // Top Bar
                 Positioned(
-                  top: SafeArea(child: Container()).minimum.top + 16,
+                  top: topPadding + 16,
                   left: 16,
                   child: CircleAvatar(
                     backgroundColor: Colors.black45,
@@ -155,7 +156,7 @@ class _LocationCameraScreenState extends State<LocationCameraScreen> {
 
                 // Location & Time Overlay
                 Positioned(
-                  top: SafeArea(child: Container()).minimum.top + 70,
+                  top: topPadding + 70,
                   left: 16,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,

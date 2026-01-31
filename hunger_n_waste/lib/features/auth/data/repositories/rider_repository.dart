@@ -106,9 +106,18 @@ class RiderRepository {
         .from('food_requests')
         .stream(primaryKey: ['id'])
         .eq('rider_id', riderId)
-        .order('created_at', ascending: false)
         .map((event) {
           return event.where((job) => job['status'] != 'completed').toList();
+        });
+  }
+
+  Stream<List<Map<String, dynamic>>> watchCompletedDeliveries(String riderId) {
+    return _client
+        .from('food_requests')
+        .stream(primaryKey: ['id'])
+        .eq('rider_id', riderId)
+        .map((event) {
+          return event.where((job) => job['status'] == 'completed').toList();
         });
   }
 }

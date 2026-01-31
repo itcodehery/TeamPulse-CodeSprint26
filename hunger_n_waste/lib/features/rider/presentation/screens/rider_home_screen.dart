@@ -35,6 +35,15 @@ final riderActiveJobsStreamProvider =
       return ref.watch(riderRepositoryProvider).watchActiveJobs(user.id);
     });
 
+final riderCompletedDeliveriesStreamProvider =
+    StreamProvider.autoDispose<List<Map<String, dynamic>>>((ref) {
+      final user = Supabase.instance.client.auth.currentUser;
+      if (user == null) return Stream.value([]);
+      return ref
+          .watch(riderRepositoryProvider)
+          .watchCompletedDeliveries(user.id);
+    });
+
 final availableOrdersStreamProvider =
     StreamProvider.autoDispose<List<FoodRequest>>((ref) {
       return ref.watch(foodRequestRepositoryProvider).watchAvailableOrders();
@@ -71,6 +80,14 @@ class RiderHomeScreen extends ConsumerWidget {
             icon: const Icon(Icons.person),
             onPressed: () => context.push('/profile'),
           ),
+          IconButton(
+            icon: const Icon(Icons.logout_rounded),
+            onPressed: () async {
+              await Supabase.instance.client.auth.signOut();
+              if (context.mounted) context.go('/login');
+            },
+          ),
+          const SizedBox(width: 8),
         ],
       ),
       body: profileAsync.when(
@@ -222,19 +239,18 @@ class _RiderDashboardContentState
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: isAvailable
-                    ? [const Color(0xFF2E7D32), const Color(0xFF4CAF50)]
-                    : [const Color(0xFF616161), const Color(0xFF9E9E9E)],
+                    ? [const Color(0xFF2E7D32), const Color(0xFF1B5E20)]
+                    : [const Color(0xFF424242), const Color(0xFF212121)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
-              borderRadius: BorderRadius.circular(24),
+              borderRadius: BorderRadius.circular(32),
               boxShadow: [
                 BoxShadow(
-                  color: (isAvailable ? Colors.green : Colors.grey).withOpacity(
-                    0.3,
-                  ),
-                  blurRadius: 12,
-                  offset: const Offset(0, 6),
+                  color: (isAvailable ? const Color(0xFF2E7D32) : Colors.black)
+                      .withOpacity(0.3),
+                  blurRadius: 20,
+                  offset: const Offset(0, 10),
                 ),
               ],
             ),
@@ -256,24 +272,26 @@ class _RiderDashboardContentState
                     }
                   }
                 },
-                borderRadius: BorderRadius.circular(24),
+                borderRadius: BorderRadius.circular(32),
                 child: Padding(
-                  padding: const EdgeInsets.all(20.0),
+                  padding: const EdgeInsets.all(28.0),
                   child: Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.all(12),
+                        padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
                           color: Colors.white.withOpacity(0.2),
-                          shape: BoxShape.circle,
+                          borderRadius: BorderRadius.circular(20),
                         ),
                         child: Icon(
-                          isAvailable ? Icons.bolt : Icons.power_settings_new,
+                          isAvailable
+                              ? Icons.bolt_rounded
+                              : Icons.power_rounded,
                           color: Colors.white,
-                          size: 28,
+                          size: 32,
                         ),
                       ),
-                      const SizedBox(width: 16),
+                      const SizedBox(width: 20),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -282,17 +300,17 @@ class _RiderDashboardContentState
                               isAvailable ? 'ONLINE' : 'OFFLINE',
                               style: GoogleFonts.outfit(
                                 color: Colors.white,
-                                fontSize: 20,
+                                fontSize: 22,
                                 fontWeight: FontWeight.bold,
-                                letterSpacing: 1.2,
+                                letterSpacing: 1.5,
                               ),
                             ),
                             Text(
                               isAvailable
-                                  ? 'Ready to deliver'
-                                  : 'Tap to go online',
+                                  ? 'Active & Ready for orders'
+                                  : 'Tap to start your shift',
                               style: GoogleFonts.outfit(
-                                color: Colors.white.withOpacity(0.8),
+                                color: Colors.white.withOpacity(0.7),
                                 fontSize: 14,
                               ),
                             ),
@@ -300,7 +318,7 @@ class _RiderDashboardContentState
                         ),
                       ),
                       Transform.scale(
-                        scale: 1.2,
+                        scale: 1.1,
                         child: Switch(
                           value: isAvailable,
                           onChanged: (val) async {
@@ -318,9 +336,9 @@ class _RiderDashboardContentState
                             }
                           },
                           activeColor: Colors.white,
-                          activeTrackColor: Colors.white.withOpacity(0.4),
-                          inactiveThumbColor: Colors.white,
-                          inactiveTrackColor: Colors.black12,
+                          activeTrackColor: Colors.white.withOpacity(0.3),
+                          inactiveThumbColor: Colors.white70,
+                          inactiveTrackColor: Colors.white10,
                         ),
                       ),
                     ],
@@ -335,12 +353,22 @@ class _RiderDashboardContentState
           // 2. Statistics Overview
           Row(
             children: [
-              _buildStatCard(
-                context,
-                'Deliveries',
-                '12',
-                Icons.shopping_bag_outlined,
-                Colors.blue,
+              Consumer(
+                builder: (context, ref, _) {
+                  final completedAsync = ref.watch(
+                    riderCompletedDeliveriesStreamProvider,
+                  );
+                  return _buildStatCard(
+                    context,
+                    'Deliveries',
+                    completedAsync.maybeWhen(
+                      data: (jobs) => jobs.length.toString(),
+                      orElse: () => '...',
+                    ),
+                    Icons.shopping_bag_outlined,
+                    Colors.blue,
+                  );
+                },
               ),
               const SizedBox(width: 12),
               _buildStatCard(
@@ -419,9 +447,9 @@ class _RiderDashboardContentState
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Active Jobs',
+                'Active & Pickup',
                 style: GoogleFonts.outfit(
-                  fontSize: 20,
+                  fontSize: 22,
                   fontWeight: FontWeight.bold,
                   color: Colors.black87,
                 ),
@@ -613,18 +641,19 @@ class _JobCard extends ConsumerWidget {
     double? lat,
     double? long,
   ) {
+    bool qualityChecked = false;
+    bool packagingChecked = false;
+    String? imagePath;
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      useRootNavigator: true,
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
       ),
       builder: (context) {
-        bool qualityChecked = false;
-        bool packagingChecked = false;
-        String? imagePath;
-
         return StatefulBuilder(
           builder: (context, setState) {
             return Padding(
@@ -785,12 +814,15 @@ class _JobCard extends ConsumerWidget {
                   else
                     OutlinedButton.icon(
                       onPressed: () async {
-                        final result = await Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const LocationCameraScreen(),
-                          ),
-                        );
+                        final result =
+                            await Navigator.of(
+                              context,
+                              rootNavigator: true,
+                            ).push(
+                              MaterialPageRoute(
+                                builder: (_) => const LocationCameraScreen(),
+                              ),
+                            );
                         if (result != null && result is String) {
                           setState(() => imagePath = result);
                         }
@@ -813,7 +845,10 @@ class _JobCard extends ConsumerWidget {
                   SizedBox(
                     height: 56,
                     child: FilledButton(
-                      onPressed: (qualityChecked && packagingChecked)
+                      onPressed:
+                          (qualityChecked &&
+                              packagingChecked &&
+                              imagePath != null)
                           ? () {
                               Navigator.pop(context);
                               _updateStatus(context, ref, 'in_transit');
@@ -852,17 +887,17 @@ class _JobCard extends ConsumerWidget {
     double? long,
   ) {
     final nameController = TextEditingController();
+    String? imagePath;
 
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      useRootNavigator: true,
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
       ),
       builder: (context) {
-        String? imagePath;
-
         return StatefulBuilder(
           builder: (context, setState) {
             return Padding(
@@ -992,12 +1027,15 @@ class _JobCard extends ConsumerWidget {
                   else
                     OutlinedButton.icon(
                       onPressed: () async {
-                        final result = await Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const LocationCameraScreen(),
-                          ),
-                        );
+                        final result =
+                            await Navigator.of(
+                              context,
+                              rootNavigator: true,
+                            ).push(
+                              MaterialPageRoute(
+                                builder: (_) => const LocationCameraScreen(),
+                              ),
+                            );
                         if (result != null && result is String) {
                           setState(() => imagePath = result);
                         }
@@ -1020,12 +1058,13 @@ class _JobCard extends ConsumerWidget {
                   SizedBox(
                     height: 56,
                     child: FilledButton(
-                      onPressed: () {
-                        if (nameController.text.isNotEmpty) {
-                          Navigator.pop(context);
-                          _updateStatus(context, ref, 'completed');
-                        }
-                      },
+                      onPressed:
+                          (nameController.text.isNotEmpty && imagePath != null)
+                          ? () {
+                              Navigator.pop(context);
+                              _updateStatus(context, ref, 'completed');
+                            }
+                          : null,
                       style: FilledButton.styleFrom(
                         backgroundColor: const Color(0xFF2E7D32),
                         shape: RoundedRectangleBorder(
@@ -1067,7 +1106,7 @@ class _JobCard extends ConsumerWidget {
     final primaryColor = isPending
         ? const Color(0xFFFF9800)
         : const Color(0xFF2E7D32);
-    final statusLabel = isPending ? 'PICKUP' : 'IN TRANSIT';
+    final statusLabel = isPending ? 'ACTIVE & PICKUP' : 'ACTIVE & DELIVERY';
 
     return Container(
       margin: const EdgeInsets.only(bottom: 24, left: 16, right: 16),
@@ -1200,8 +1239,10 @@ class _JobCard extends ConsumerWidget {
                   children: [
                     _buildNavigateButton(
                       context,
-                      isPending ? donorAsync : orgAsync,
-                      primaryColor,
+                      color: primaryColor,
+                      locationAsync: isPending ? null : orgAsync,
+                      latitude: isPending ? job['latitude'] : null,
+                      longitude: isPending ? job['longitude'] : null,
                     ),
                     const SizedBox(width: 16),
                     Expanded(
@@ -1240,10 +1281,12 @@ class _JobCard extends ConsumerWidget {
   }
 
   Widget _buildNavigateButton(
-    BuildContext context,
-    AsyncValue locationAsync,
-    Color color,
-  ) {
+    BuildContext context, {
+    required Color color,
+    AsyncValue? locationAsync,
+    double? latitude,
+    double? longitude,
+  }) {
     return Container(
       height: 54,
       width: 54,
@@ -1254,7 +1297,12 @@ class _JobCard extends ConsumerWidget {
       ),
       child: IconButton(
         onPressed: () {
-          locationAsync.whenData((data) {
+          if (latitude != null && longitude != null) {
+            _launchMap(latitude, longitude);
+            return;
+          }
+
+          locationAsync?.whenData((data) {
             if (data != null) {
               try {
                 final d = data as dynamic;
@@ -1432,8 +1480,8 @@ class _AvailableOrderCardState extends ConsumerState<_AvailableOrderCard> {
     }
 
     return Container(
-      width: 300,
-      height: 240,
+      width: 310,
+      height: 250,
       margin: const EdgeInsets.only(right: 16, bottom: 8, top: 8),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -1498,7 +1546,7 @@ class _AvailableOrderCardState extends ConsumerState<_AvailableOrderCard> {
                         ),
                       ),
                       Text(
-                        '刚刚', // Just now
+                        'Just Now',
                         style: GoogleFonts.outfit(
                           color: Colors.grey[400],
                           fontSize: 12,
@@ -1561,7 +1609,7 @@ class _AvailableOrderCardState extends ConsumerState<_AvailableOrderCard> {
                   const Spacer(),
                   SizedBox(
                     width: double.infinity,
-                    height: 46,
+                    height: 52,
                     child: FilledButton(
                       onPressed: _isLoading
                           ? null
@@ -1620,10 +1668,11 @@ class _AvailableOrderCardState extends ConsumerState<_AvailableOrderCard> {
                               ),
                             )
                           : Text(
-                              'Accept & Pickup',
+                              'ACCEPT & PICKUP',
                               style: GoogleFonts.outfit(
-                                fontWeight: FontWeight.w600,
-                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                                letterSpacing: 0.5,
                               ),
                             ),
                     ),

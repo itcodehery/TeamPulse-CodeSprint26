@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:go_router/go_router.dart';
 import '../../../home/presentation/providers/current_organization_provider.dart';
 import '../../../food_requests/data/repositories/food_request_repository.dart';
 
@@ -81,6 +82,7 @@ class _AddScreenState extends ConsumerState<AddScreen> {
         setState(() {
           _selectedFoodType = _foodTypes.first;
         });
+        context.go('/home');
       }
     } catch (e) {
       if (mounted) {
@@ -153,8 +155,9 @@ class _AddScreenState extends ConsumerState<AddScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  const SizedBox(height: 12),
                   Text(
-                    'What can you\nshare today?',
+                    'Post a\nFood Request',
                     style: GoogleFonts.outfit(
                       fontSize: 32,
                       fontWeight: FontWeight.bold,
@@ -162,106 +165,156 @@ class _AddScreenState extends ConsumerState<AddScreen> {
                       height: 1.2,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 12),
                   Text(
-                    'Fill in the details below to reach our donors.',
+                    'Help organizations find your surplus food and distribute it to those in need.',
                     style: GoogleFonts.outfit(
-                      fontSize: 14,
-                      color: Colors.grey[500],
+                      fontSize: 15,
+                      color: Colors.grey[600],
+                      height: 1.5,
                     ),
                   ),
-                  const SizedBox(height: 40),
+                  const SizedBox(height: 48),
 
-                  // Food Type Field
-                  _buildSectionLabel('FOOD CATEGORY'),
-                  const SizedBox(height: 12),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: Colors.grey[100]!),
+                  _buildFormSection(
+                    label: 'FOOD CATEGORY',
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(24),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.03),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButtonFormField<String>(
+                          value: _selectedFoodType,
+                          icon: const Icon(Icons.keyboard_arrow_down_rounded),
+                          style: GoogleFonts.outfit(
+                            fontSize: 16,
+                            color: Colors.black87,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          decoration: const InputDecoration(
+                            border: InputBorder.none,
+                            enabledBorder: InputBorder.none,
+                            focusedBorder: InputBorder.none,
+                          ),
+                          items: _foodTypes.map((type) {
+                            return DropdownMenuItem(
+                              value: type,
+                              child: Text(type),
+                            );
+                          }).toList(),
+                          onChanged: (value) {
+                            if (value != null) {
+                              setState(() => _selectedFoodType = value);
+                            }
+                          },
+                        ),
+                      ),
                     ),
-                    child: DropdownButtonHideUnderline(
-                      child: DropdownButtonFormField<String>(
-                        value: _selectedFoodType,
+                  ),
+                  const SizedBox(height: 32),
+
+                  _buildFormSection(
+                    label: 'QUANTITY (EST. SERVINGS)',
+                    child: Container(
+                      decoration: BoxDecoration(
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.03),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: TextFormField(
+                        controller: _quantityController,
                         style: GoogleFonts.outfit(
                           fontSize: 16,
-                          color: Colors.black87,
+                          fontWeight: FontWeight.w600,
                         ),
-                        decoration: const InputDecoration(
-                          border: InputBorder.none,
+                        decoration: InputDecoration(
+                          hintText: 'e.g. 50',
+                          hintStyle: GoogleFonts.outfit(
+                            color: Colors.grey[400],
+                            fontWeight: FontWeight.normal,
+                          ),
+                          prefixIcon: Icon(
+                            Icons.group_rounded,
+                            color: Theme.of(context).primaryColor,
+                            size: 22,
+                          ),
+                          filled: true,
+                          fillColor: Colors.white,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(24),
+                            borderSide: BorderSide.none,
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(
+                            vertical: 20,
+                            horizontal: 20,
+                          ),
                         ),
-                        items: _foodTypes.map((type) {
-                          return DropdownMenuItem(
-                            value: type,
-                            child: Text(type),
-                          );
-                        }).toList(),
-                        onChanged: (value) {
-                          if (value != null)
-                            setState(() => _selectedFoodType = value);
+                        keyboardType: TextInputType.number,
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please enter quantity';
+                          }
+                          if (int.tryParse(value) == null ||
+                              int.parse(value) <= 0) {
+                            return 'Enter a valid number';
+                          }
+                          return null;
                         },
                       ),
                     ),
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 64),
 
-                  // Quantity Field
-                  _buildSectionLabel('QUANTITY (SERVINGS)'),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    controller: _quantityController,
-                    style: GoogleFonts.outfit(fontSize: 16),
-                    decoration: InputDecoration(
-                      hintText: 'e.g. 50',
-                      hintStyle: GoogleFonts.outfit(color: Colors.grey[400]),
-                      prefixIcon: Icon(
-                        Icons.people_alt_rounded,
-                        color: Colors.grey[400],
-                        size: 20,
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(20),
-                        borderSide: BorderSide.none,
-                      ),
-                      filled: true,
-                      fillColor: Colors.white,
-                      contentPadding: const EdgeInsets.symmetric(vertical: 18),
-                    ),
-                    keyboardType: TextInputType.number,
-                    validator: (value) {
-                      if (value == null || value.isEmpty)
-                        return 'Please enter quantity';
-                      if (int.tryParse(value) == null || int.parse(value) <= 0)
-                        return 'Enter a valid number';
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 48),
-
-                  // Submit Button
                   SizedBox(
-                    height: 58,
+                    height: 64,
                     child: FilledButton(
                       onPressed: _isLoading ? null : _submitRequest,
                       style: FilledButton.styleFrom(
                         backgroundColor: Theme.of(context).primaryColor,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(18),
+                          borderRadius: BorderRadius.circular(24),
                         ),
                         elevation: 0,
                       ),
                       child: _isLoading
-                          ? const CircularProgressIndicator(color: Colors.white)
+                          ? const SizedBox(
+                              height: 24,
+                              width: 24,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
+                            )
                           : Text(
-                              'POST REQUEST',
+                              'CONFIRM & POST',
                               style: GoogleFonts.outfit(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 16,
-                                letterSpacing: 0.5,
+                                letterSpacing: 1.2,
                               ),
                             ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Text(
+                    'By posting, you agree to our community guidelines regarding food safety and quality.',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.outfit(
+                      fontSize: 12,
+                      color: Colors.grey[400],
                     ),
                   ),
                 ],
@@ -275,15 +328,22 @@ class _AddScreenState extends ConsumerState<AddScreen> {
     );
   }
 
-  Widget _buildSectionLabel(String label) {
-    return Text(
-      label,
-      style: GoogleFonts.outfit(
-        fontSize: 11,
-        fontWeight: FontWeight.bold,
-        color: Theme.of(context).primaryColor,
-        letterSpacing: 1.5,
-      ),
+  Widget _buildFormSection({required String label, required Widget child}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: GoogleFonts.outfit(
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+            color: Theme.of(context).primaryColor,
+            letterSpacing: 1.5,
+          ),
+        ),
+        const SizedBox(height: 12),
+        child,
+      ],
     );
   }
 }

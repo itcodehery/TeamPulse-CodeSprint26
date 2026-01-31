@@ -173,14 +173,17 @@ class FoodRequestRepository {
     }
 
     // Update Request Status & Assign Rider (if applicable)
-    await _client
-        .from('food_requests')
-        .update({
-          'status': status,
-          'donor_id': donorId,
-          // 'rider_id': assignedRiderId, // No longer auto-assigning
-        })
-        .eq('id', requestId);
+    final Map<String, dynamic> updateData = {
+      'status': status,
+      'donor_id': donorId,
+    };
+
+    if (pickupLocation != null) {
+      updateData['latitude'] = pickupLocation.latitude;
+      updateData['longitude'] = pickupLocation.longitude;
+    }
+
+    await _client.from('food_requests').update(updateData).eq('id', requestId);
 
     // Optional: Set assigned rider to unavailable
     /* 

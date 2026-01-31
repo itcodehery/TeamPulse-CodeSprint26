@@ -114,7 +114,7 @@ class _OrganizationHomeScreenState
                     }, childCount: requests.length),
                   ),
                 ),
-              const SliverToBoxAdapter(child: SizedBox(height: 100)),
+              const SliverToBoxAdapter(child: SizedBox(height: 80)),
             ],
           );
         },
@@ -143,109 +143,147 @@ class _OrganizationHomeScreenState
         .where((r) => r.status != FoodRequestStatus.completed)
         .length;
 
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Row(
-        children: [
-          Expanded(
-            child: _buildMetricCard(
-              'People Helped',
-              totalPeople.toString(),
-              Icons.people_alt_rounded,
-              const Color(0xFFE8F5E9),
-              const Color(0xFF2E7D32),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: _buildMetricCard(
-              'Active Orders',
-              activeCount.toString(),
-              Icons.local_shipping_rounded,
-              const Color(0xFFFFF3E0),
-              const Color(0xFFE65100),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMetricCard(
-    String label,
-    String value,
-    IconData icon,
-    Color bg,
-    Color text,
-  ) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      margin: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(28),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [const Color(0xFF2E7D32), const Color(0xFF1B5E20)],
+        ),
+        borderRadius: BorderRadius.circular(32),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 16,
-            offset: const Offset(0, 8),
+            color: const Color(0xFF2E7D32).withOpacity(0.3),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: bg,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(icon, color: text, size: 20),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Your Impact',
+                    style: GoogleFonts.outfit(
+                      color: Colors.white.withOpacity(0.8),
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Level 4 Helper',
+                    style: GoogleFonts.outfit(
+                      color: Colors.white,
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.auto_awesome_rounded,
+                  color: Colors.white,
+                  size: 24,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 16),
-          Text(
-            value,
-            style: GoogleFonts.outfit(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: Colors.black87,
-            ),
-          ),
-          Text(
-            label,
-            style: GoogleFonts.outfit(fontSize: 12, color: Colors.grey[500]),
+          const SizedBox(height: 32),
+          Row(
+            children: [
+              Expanded(
+                child: _buildMetricTile(
+                  'People Helped',
+                  totalPeople.toString(),
+                  Icons.favorite_rounded,
+                ),
+              ),
+              Container(
+                width: 1,
+                height: 40,
+                color: Colors.white.withOpacity(0.2),
+              ),
+              Expanded(
+                child: _buildMetricTile(
+                  'Active Orders',
+                  activeCount.toString(),
+                  Icons.local_shipping_rounded,
+                ),
+              ),
+            ],
           ),
         ],
       ),
     );
   }
 
+  Widget _buildMetricTile(String label, String value, IconData icon) {
+    return Column(
+      children: [
+        Icon(icon, color: Colors.white.withOpacity(0.9), size: 20),
+        const SizedBox(height: 8),
+        Text(
+          value,
+          style: GoogleFonts.outfit(
+            color: Colors.white,
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        Text(
+          label,
+          style: GoogleFonts.outfit(
+            color: Colors.white.withOpacity(0.6),
+            fontSize: 12,
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildRequestCard(FoodRequest req) {
     final statusColor = _getStatusColor(req.status);
+    final statusIcon = _getStatusIconData(req.status);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.grey[100]!),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Row(
           children: [
             Container(
-              width: 56,
-              height: 56,
+              padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: statusColor.withOpacity(0.1),
+                color: statusColor.withOpacity(0.08),
                 borderRadius: BorderRadius.circular(16),
               ),
-              child: Icon(
-                _getStatusIconData(req.status),
-                color: statusColor,
-                size: 24,
-              ),
+              child: Icon(statusIcon, color: statusColor, size: 24),
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -261,40 +299,47 @@ class _OrganizationHomeScreenState
                     ),
                   ),
                   const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.people_outline_rounded,
-                        size: 14,
-                        color: Colors.grey[400],
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        'Feeding ${req.quantity}',
-                        style: GoogleFonts.outfit(
-                          fontSize: 13,
-                          color: Colors.grey[500],
-                        ),
-                      ),
-                    ],
+                  Text(
+                    'For ${req.quantity} people',
+                    style: GoogleFonts.outfit(
+                      fontSize: 13,
+                      color: Colors.grey[500],
+                    ),
                   ),
                 ],
               ),
             ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: statusColor.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(100),
-              ),
-              child: Text(
-                req.status.name.toUpperCase(),
-                style: GoogleFonts.outfit(
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
-                  color: statusColor,
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: statusColor.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(100),
+                  ),
+                  child: Text(
+                    req.status.name.toUpperCase(),
+                    style: GoogleFonts.outfit(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      color: statusColor,
+                    ),
+                  ),
                 ),
-              ),
+                const SizedBox(height: 8),
+                Text(
+                  'JUST NOW',
+                  style: GoogleFonts.outfit(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.grey[400],
+                  ),
+                ),
+              ],
             ),
           ],
         ),
@@ -307,9 +352,9 @@ class _OrganizationHomeScreenState
       case FoodRequestStatus.open:
         return const Color(0xFF2E7D32);
       case FoodRequestStatus.pendingPickup:
-        return const Color(0xFFE65100);
+        return Colors.orange;
       case FoodRequestStatus.inTransit:
-        return const Color(0xFF1565C0);
+        return Colors.blue;
       case FoodRequestStatus.completed:
         return Colors.grey;
       case FoodRequestStatus.cancelled:
@@ -322,15 +367,15 @@ class _OrganizationHomeScreenState
   IconData _getStatusIconData(FoodRequestStatus status) {
     switch (status) {
       case FoodRequestStatus.open:
-        return Icons.check_circle_outline_rounded;
+        return Icons.circle_outlined;
       case FoodRequestStatus.pendingPickup:
-        return Icons.access_time_filled_rounded;
+        return Icons.access_time_rounded;
       case FoodRequestStatus.inTransit:
         return Icons.local_shipping_rounded;
       case FoodRequestStatus.completed:
-        return Icons.task_alt_rounded;
+        return Icons.check_circle_rounded;
       case FoodRequestStatus.cancelled:
-        return Icons.cancel_outlined;
+        return Icons.cancel_rounded;
       default:
         return Icons.restaurant_rounded;
     }

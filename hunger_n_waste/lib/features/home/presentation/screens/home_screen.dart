@@ -237,11 +237,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         data: (requests) {
                           return requests
                               .map((req) {
-                                // Use request's own location (from food_requests table)
                                 final lat = req.latitude;
                                 final long = req.longitude;
-
-                                // Skip if location is invalid
                                 if (lat == 0 && long == 0) return null;
 
                                 return Marker(
@@ -260,19 +257,31 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                           size: 50,
                                         ),
                                         Positioned(
+                                          right: 8,
                                           top: 0,
-                                          right: 0,
                                           child: Container(
-                                            padding: const EdgeInsets.all(4),
-                                            decoration: const BoxDecoration(
-                                              color: Colors.green,
+                                            padding: const EdgeInsets.all(6),
+                                            decoration: BoxDecoration(
+                                              color: const Color(0xFF2E7D32),
                                               shape: BoxShape.circle,
+                                              border: Border.all(
+                                                color: Colors.white,
+                                                width: 2,
+                                              ),
+                                              boxShadow: [
+                                                BoxShadow(
+                                                  color: Colors.black
+                                                      .withOpacity(0.1),
+                                                  blurRadius: 4,
+                                                  offset: const Offset(0, 2),
+                                                ),
+                                              ],
                                             ),
                                             child: Text(
                                               '${req.quantity}',
-                                              style: const TextStyle(
+                                              style: GoogleFonts.outfit(
                                                 color: Colors.white,
-                                                fontSize: 12,
+                                                fontSize: 10,
                                                 fontWeight: FontWeight.bold,
                                               ),
                                             ),
@@ -296,9 +305,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
           // Organization List Sheet
           DraggableScrollableSheet(
-            initialChildSize: 0.35,
-            minChildSize: 0.18,
-            maxChildSize: 0.85,
+            initialChildSize: 0.38,
+            minChildSize: 0.2,
+            maxChildSize: 0.9,
             builder: (context, scrollController) {
               return Container(
                 decoration: BoxDecoration(
@@ -477,7 +486,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
           // Recenter Button
           Positioned(
-            bottom: 180,
+            bottom: 100,
             right: 16,
             child: FloatingActionButton(
               heroTag: 'recenter',
