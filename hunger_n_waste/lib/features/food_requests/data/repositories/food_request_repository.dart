@@ -116,6 +116,15 @@ class FoodRequestRepository {
         .toList();
   }
 
+  Stream<List<FoodRequest>> watchActiveRequests() {
+    return _client
+        .from('food_requests')
+        .stream(primaryKey: ['id'])
+        .eq('status', 'open')
+        .order('created_at', ascending: false)
+        .map((data) => data.map((json) => FoodRequest.fromJson(json)).toList());
+  }
+
   // Stream for donor contributions (for notifications)
   Stream<List<FoodRequest>> watchDonorContributions(String donorId) {
     print(

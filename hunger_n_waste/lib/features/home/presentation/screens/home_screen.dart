@@ -120,7 +120,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       if (permission == LocationPermission.whileInUse ||
           permission == LocationPermission.always) {
         final position = await Geolocator.getCurrentPosition(
-          desiredAccuracy: LocationAccuracy.high,
+          locationSettings: const LocationSettings(
+            accuracy: LocationAccuracy.high,
+          ),
         );
         final latLng = LatLng(position.latitude, position.longitude);
 
@@ -197,11 +199,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           margin: const EdgeInsets.fromLTRB(16, 40, 16, 0),
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.85),
+            color: Colors.white.withValues(alpha: 0.85),
             borderRadius: BorderRadius.circular(24),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.08),
+                color: Colors.black.withValues(alpha: 0.08),
                 blurRadius: 20,
                 offset: const Offset(0, 4),
               ),
@@ -216,7 +218,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 child: Row(
                   children: [
                     Text(
-                      'Explore',
+                      'Donate',
                       style: GoogleFonts.outfit(
                         fontWeight: FontWeight.bold,
                         fontSize: 24,
@@ -232,7 +234,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       ),
                       onPressed: () async {
                         await Supabase.instance.client.auth.signOut();
-                        if (mounted) context.go('/login');
+                        if (!context.mounted) return;
+                        context.go('/login');
                       },
                     ),
                     IconButton(
@@ -290,67 +293,66 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ...ref
                       .watch(activeRequestsProvider)
                       .when(
-                        data: (requests) {
-                          return requests
-                              .map((req) {
-                                final lat = req.latitude;
-                                final long = req.longitude;
-                                if (lat == 0 && long == 0) return null;
+                        data: (requests) => requests
+                            .map((req) {
+                              final lat = req.latitude;
+                              final lng = req.longitude;
+                              if (lat == 0 && lng == 0) return null;
 
-                                return Marker(
-                                  key: ValueKey(req.id),
-                                  point: LatLng(lat, long),
-                                  width: 60,
-                                  height: 60,
-                                  child: GestureDetector(
-                                    onTap: () =>
-                                        _showRequestDetails(context, req),
-                                    child: Stack(
-                                      children: [
-                                        const Icon(
-                                          Icons.location_on,
-                                          color: Colors.red,
-                                          size: 50,
-                                        ),
-                                        Positioned(
-                                          right: 8,
-                                          top: 0,
-                                          child: Container(
-                                            padding: const EdgeInsets.all(6),
-                                            decoration: BoxDecoration(
-                                              color: const Color(0xFF2E7D32),
-                                              shape: BoxShape.circle,
-                                              border: Border.all(
-                                                color: Colors.white,
-                                                width: 2,
-                                              ),
-                                              boxShadow: [
-                                                BoxShadow(
-                                                  color: Colors.black
-                                                      .withOpacity(0.1),
-                                                  blurRadius: 4,
-                                                  offset: const Offset(0, 2),
-                                                ),
-                                              ],
+                              return Marker(
+                                key: ValueKey(req.id),
+                                point: LatLng(lat, lng),
+                                width: 60,
+                                height: 60,
+                                child: GestureDetector(
+                                  onTap: () =>
+                                      _showRequestDetails(context, req),
+                                  child: Stack(
+                                    children: [
+                                      const Icon(
+                                        Icons.location_on,
+                                        color: Colors.red,
+                                        size: 50,
+                                      ),
+                                      Positioned(
+                                        right: 8,
+                                        top: 0,
+                                        child: Container(
+                                          padding: const EdgeInsets.all(6),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFF2E7D32),
+                                            shape: BoxShape.circle,
+                                            border: Border.all(
+                                              color: Colors.white,
+                                              width: 2,
                                             ),
-                                            child: Text(
-                                              '${req.quantity}',
-                                              style: GoogleFonts.outfit(
-                                                color: Colors.white,
-                                                fontSize: 10,
-                                                fontWeight: FontWeight.bold,
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: Colors.black.withValues(
+                                                  alpha: 0.1,
+                                                ),
+                                                blurRadius: 4,
+                                                offset: const Offset(0, 2),
                                               ),
+                                            ],
+                                          ),
+                                          child: Text(
+                                            '${req.quantity}',
+                                            style: GoogleFonts.outfit(
+                                              color: Colors.white,
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.bold,
                                             ),
                                           ),
                                         ),
-                                      ],
-                                    ),
+                                      ),
+                                    ],
                                   ),
-                                );
-                              })
-                              .whereType<Marker>()
-                              .toList();
-                        },
+                                ),
+                              );
+                            })
+                            .whereType<Marker>()
+                            .toList(),
                         error: (err, stack) => [],
                         loading: () => [],
                       ),
@@ -380,7 +382,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.06),
+                        color: Colors.black.withValues(alpha: 0.06),
                         blurRadius: 24,
                         offset: const Offset(0, -8),
                       ),
@@ -450,8 +452,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 activeRequestsProvider,
                               );
                               final activeOrgIds =
-                                  activeRequestsAsync.asData?.value
-                                      .map((req) => req.orgId)
+                                  activeRequestsAsync.value
+                                      ?.map((req) => req.orgId)
                                       .toSet() ??
                                   {};
 
@@ -568,17 +570,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 width: 56,
                 height: 56,
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.9),
+                  color: Colors.white.withValues(alpha: 0.9),
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.12),
+                      color: Colors.black.withValues(alpha: 0.12),
                       blurRadius: 16,
                       offset: const Offset(0, 4),
                     ),
                   ],
                   border: Border.all(
-                    color: Colors.white.withOpacity(0.5),
+                    color: Colors.white.withValues(alpha: 0.5),
                     width: 1.5,
                   ),
                 ),
@@ -648,7 +650,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Theme.of(context).primaryColor.withOpacity(0.08),
+                      color: Theme.of(
+                        context,
+                      ).primaryColor.withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: Icon(
@@ -684,7 +688,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ],
               ),
               const SizedBox(height: 32),
-
               Text(
                 'THE IMPACT'.toUpperCase(),
                 style: GoogleFonts.outfit(
@@ -716,7 +719,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         decorationStyle: TextDecorationStyle.solid,
                         decorationColor: Theme.of(
                           context,
-                        ).primaryColor.withOpacity(0.3),
+                        ).primaryColor.withValues(alpha: 0.3),
                       ),
                     ),
                     const TextSpan(
@@ -733,7 +736,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ),
               ),
               const SizedBox(height: 32),
-
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
@@ -750,7 +752,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.02),
+                            color: Colors.black.withValues(alpha: 0.02),
                             blurRadius: 10,
                           ),
                         ],
@@ -790,7 +792,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ),
               ),
               const SizedBox(height: 32),
-
               SizedBox(
                 height: 58,
                 child: FilledButton(
@@ -812,10 +813,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     elevation: 0,
                   ),
                   child: Text(
-                    'ACCEPT & SUPPORT',
+                    'Donate & Fulfill',
                     style: GoogleFonts.outfit(
-                      fontWeight: FontWeight.bold,
                       fontSize: 16,
+                      fontWeight: FontWeight.bold,
                       letterSpacing: 0.5,
                     ),
                   ),

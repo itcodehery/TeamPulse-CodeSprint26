@@ -40,16 +40,15 @@ class FoodRequest {
   });
 
   factory FoodRequest.fromJson(Map<String, dynamic> json) {
-    print('🔵 [FoodRequest.fromJson] Parsing JSON: $json');
-    print(
-      '🔵 [FoodRequest.fromJson] ID: ${json['id']} (type: ${json['id'].runtimeType})',
-    );
-    print(
-      '🔵 [FoodRequest.fromJson] org_id: ${json['org_id']} (type: ${json['org_id']?.runtimeType})',
-    );
-    print(
-      '🔵 [FoodRequest.fromJson] status: ${json['status']} (type: ${json['status']?.runtimeType})',
-    );
+    final orgData = json['organization_profiles'];
+    final orgProfile = orgData != null
+        ? OrganizationProfile.fromJson(orgData)
+        : null;
+
+    final double lat =
+        (json['latitude'] as num?)?.toDouble() ?? orgProfile?.latitude ?? 0.0;
+    final double lng =
+        (json['longitude'] as num?)?.toDouble() ?? orgProfile?.longitude ?? 0.0;
 
     try {
       return FoodRequest(
@@ -69,17 +68,43 @@ class FoodRequest {
         updatedAt: json['updated_at'] != null
             ? DateTime.parse(json['updated_at'] as String)
             : DateTime.now(),
-        organization: json['organization_profiles'] != null
-            ? OrganizationProfile.fromJson(json['organization_profiles'])
-            : null,
-        latitude: (json['latitude'] as num?)?.toDouble() ?? 0.0,
-        longitude: (json['longitude'] as num?)?.toDouble() ?? 0.0,
+        organization: orgProfile,
+        latitude: lat,
+        longitude: lng,
       );
-    } catch (e, stackTrace) {
-      print('🔴 [FoodRequest.fromJson] ERROR: $e');
-      print('🔴 [FoodRequest.fromJson] Stack trace: $stackTrace');
+    } catch (e) {
       rethrow;
     }
+  }
+
+  FoodRequest copyWith({
+    String? id,
+    String? orgId,
+    String? foodType,
+    int? quantity,
+    FoodRequestStatus? status,
+    String? donorId,
+    String? riderId,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    OrganizationProfile? organization,
+    double? latitude,
+    double? longitude,
+  }) {
+    return FoodRequest(
+      id: id ?? this.id,
+      orgId: orgId ?? this.orgId,
+      foodType: foodType ?? this.foodType,
+      quantity: quantity ?? this.quantity,
+      status: status ?? this.status,
+      donorId: donorId ?? this.donorId,
+      riderId: riderId ?? this.riderId,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      organization: organization ?? this.organization,
+      latitude: latitude ?? this.latitude,
+      longitude: longitude ?? this.longitude,
+    );
   }
 
   Map<String, dynamic> toJson() {

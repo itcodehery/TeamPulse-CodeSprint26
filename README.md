@@ -1,4 +1,4 @@
-# Project Name: HappyMeal
+# Project Name: Morsels
 ### Problem Statement ID: CS01SW
 ### Team Name: Team Pulse
 ### College Name: CHRIST (Deemed to be University), Central Campus
@@ -9,7 +9,7 @@
 Food waste and hunger are two simultaneous global crises. While massive amounts of food are discarded daily, many communities struggle with food insecurity. The lack of a streamlined logistics network makes it difficult to transfer surplus food to those in need quickly and safely.
 
 ## Proposed Solution
-**HappyMeal** is a digital platform designed to bridge the gap between surplus food sources and NGOs. By leveraging real-time location services, the application connects donors with verified organizations to facilitate the efficient redistribution of food.
+**Morsels** is a digital platform designed to bridge the gap between surplus food sources and NGOs. By leveraging real-time location services, the application connects donors with verified organizations to facilitate the efficient redistribution of food.
 
 Our mobile application:
 - **Connects** donors (Caterers, Event Organizers, Individuals) with nearby verified NGOs via an intuitive map interface.
