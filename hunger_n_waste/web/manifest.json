@@ -1,6 +1,6 @@
 {
-    "name": "hunger_n_waste",
-    "short_name": "hunger_n_waste",
+    "name": "Morsels",
+    "short_name": "Morsels",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

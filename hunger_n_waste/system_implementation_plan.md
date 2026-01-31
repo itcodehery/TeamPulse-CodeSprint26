@@ -1,4 +1,4 @@
-# System Implementation Plan: Hunger n Waste Redistribution
+# System Implementation Plan: Morsels Food Redistribution
 
 This document outlines the step-by-step plan to implement the core food redistribution workflow involving Organizations, Donors, and Riders.
 

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/widgets/location_picker_screen.dart';
 import '../../data/repositories/auth_repository.dart';
@@ -108,7 +109,12 @@ class _OrganizationRegistrationScreenState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Organization Registration')),
+      appBar: AppBar(
+        title: Text(
+          'Organization Registration',
+          style: GoogleFonts.outfit(fontWeight: FontWeight.w600),
+        ),
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24.0),
         child: Form(

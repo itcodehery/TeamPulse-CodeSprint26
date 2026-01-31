@@ -79,7 +79,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 ),
                 const SizedBox(height: 24),
                 Text(
-                  'HappyMeal',
+                  'Morsels',
                   textAlign: TextAlign.center,
                   style: GoogleFonts.outfit(
                     fontSize: 32,

@@ -30,6 +30,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   LatLng? _currentPosition;
   bool _isMapReady = false;
   bool _hasMovedToUser = false;
+  bool _isLocating = false;
+  double _sheetExtent = 0.38; // Initial extent
   String _searchQuery = '';
   final Map<String, String> _previousStatuses = {};
 
@@ -81,6 +83,60 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       }
     } catch (e) {
       debugPrint('Error getting location: $e');
+    }
+  }
+
+  Future<void> _locateMe() async {
+    if (_isLocating) return;
+    setState(() => _isLocating = true);
+
+    try {
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Location services are disabled.')),
+          );
+        }
+        return;
+      }
+
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+
+      if (permission == LocationPermission.deniedForever) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Location permissions are permanently denied.'),
+            ),
+          );
+        }
+        return;
+      }
+
+      if (permission == LocationPermission.whileInUse ||
+          permission == LocationPermission.always) {
+        final position = await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.high,
+        );
+        final latLng = LatLng(position.latitude, position.longitude);
+
+        if (mounted) {
+          setState(() {
+            _currentPosition = latLng;
+          });
+          _mapController.move(latLng, 15.0);
+        }
+      }
+    } catch (e) {
+      debugPrint('Error getting location: $e');
+    } finally {
+      if (mounted) {
+        setState(() => _isLocating = false);
+      }
     }
   }
 
@@ -200,9 +256,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             mapController: _mapController,
             options: MapOptions(
               initialCenter: const LatLng(
-                51.509364,
-                -0.128928,
-              ), // Default to London
+                12.9716,
+                77.5946,
+              ), // Default to Bangalore
               initialZoom: 13.0,
               interactionOptions: const InteractionOptions(
                 flags: InteractiveFlag.all,
@@ -304,196 +360,251 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
 
           // Organization List Sheet
-          DraggableScrollableSheet(
-            initialChildSize: 0.38,
-            minChildSize: 0.2,
-            maxChildSize: 0.9,
-            builder: (context, scrollController) {
-              return Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(32),
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.06),
-                      blurRadius: 24,
-                      offset: const Offset(0, -8),
+          NotificationListener<DraggableScrollableNotification>(
+            onNotification: (notification) {
+              setState(() {
+                _sheetExtent = notification.extent;
+              });
+              return true;
+            },
+            child: DraggableScrollableSheet(
+              initialChildSize: 0.38,
+              minChildSize: 0.2,
+              maxChildSize: 0.9,
+              builder: (context, scrollController) {
+                return Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(32),
                     ),
-                  ],
-                ),
-                child: CustomScrollView(
-                  controller: scrollController,
-                  slivers: [
-                    SliverToBoxAdapter(
-                      child: Column(
-                        children: [
-                          // Handle bar
-                          Container(
-                            margin: const EdgeInsets.symmetric(vertical: 12),
-                            width: 40,
-                            height: 4,
-                            decoration: BoxDecoration(
-                              color: Colors.grey[300],
-                              borderRadius: BorderRadius.circular(2),
-                            ),
-                          ),
-                          // Search bar
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 24),
-                            child: TextField(
-                              controller: _searchController,
-                              style: GoogleFonts.outfit(fontSize: 16),
-                              decoration: InputDecoration(
-                                hintText: 'Search organizations...',
-                                hintStyle: GoogleFonts.outfit(
-                                  color: Colors.grey[400],
-                                ),
-                                prefixIcon: Icon(
-                                  Icons.search_rounded,
-                                  color: Colors.grey[400],
-                                ),
-                                suffixIcon: _searchQuery.isNotEmpty
-                                    ? IconButton(
-                                        icon: const Icon(Icons.clear_rounded),
-                                        onPressed: () =>
-                                            _searchController.clear(),
-                                      )
-                                    : null,
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(20),
-                                  borderSide: BorderSide.none,
-                                ),
-                                filled: true,
-                                fillColor: Colors.grey[50],
-                                contentPadding: const EdgeInsets.symmetric(
-                                  vertical: 16,
-                                ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.06),
+                        blurRadius: 24,
+                        offset: const Offset(0, -8),
+                      ),
+                    ],
+                  ),
+                  child: CustomScrollView(
+                    controller: scrollController,
+                    slivers: [
+                      SliverToBoxAdapter(
+                        child: Column(
+                          children: [
+                            // Handle bar
+                            Container(
+                              margin: const EdgeInsets.symmetric(vertical: 12),
+                              width: 40,
+                              height: 4,
+                              decoration: BoxDecoration(
+                                color: Colors.grey[300],
+                                borderRadius: BorderRadius.circular(2),
                               ),
                             ),
-                          ),
-                          const SizedBox(height: 16),
-                        ],
-                      ),
-                    ),
-                    ref
-                        .watch(allOrganizationsProvider)
-                        .when(
-                          data: (organizations) {
-                            final activeRequestsAsync = ref.watch(
-                              activeRequestsProvider,
-                            );
-                            final activeOrgIds =
-                                activeRequestsAsync.asData?.value
-                                    .map((req) => req.orgId)
-                                    .toSet() ??
-                                {};
-
-                            // Filter organizations based on search
-                            final filteredOrgs = organizations.where((org) {
-                              if (_searchQuery.isEmpty) return true;
-                              return org.organizationName
-                                      .toLowerCase()
-                                      .contains(_searchQuery) ||
-                                  org.address.toLowerCase().contains(
-                                    _searchQuery,
-                                  );
-                            }).toList();
-
-                            // Sort: Open first, then closed
-                            filteredOrgs.sort((a, b) {
-                              final aOpen = activeOrgIds.contains(a.id);
-                              final bOpen = activeOrgIds.contains(b.id);
-                              if (aOpen && !bOpen) return -1;
-                              if (!aOpen && bOpen) return 1;
-                              return 0;
-                            });
-
-                            if (filteredOrgs.isEmpty) {
-                              return SliverToBoxAdapter(
-                                child: Padding(
-                                  padding: const EdgeInsets.all(24.0),
-                                  child: Center(
-                                    child: Column(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: [
-                                        Icon(
-                                          Icons.search_off,
-                                          size: 64,
-                                          color: Colors.grey[400],
-                                        ),
-                                        const SizedBox(height: 16),
-                                        Text(
-                                          'No organizations found',
-                                          style: GoogleFonts.outfit(
-                                            fontSize: 16,
-                                            color: Colors.grey[600],
-                                          ),
-                                        ),
-                                      ],
-                                    ),
+                            // Search bar
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 24,
+                              ),
+                              child: TextField(
+                                controller: _searchController,
+                                style: GoogleFonts.outfit(fontSize: 16),
+                                decoration: InputDecoration(
+                                  hintText: 'Search organizations...',
+                                  hintStyle: GoogleFonts.outfit(
+                                    color: Colors.grey[400],
+                                  ),
+                                  prefixIcon: Icon(
+                                    Icons.search_rounded,
+                                    color: Colors.grey[400],
+                                  ),
+                                  suffixIcon: _searchQuery.isNotEmpty
+                                      ? IconButton(
+                                          icon: const Icon(Icons.clear_rounded),
+                                          onPressed: () =>
+                                              _searchController.clear(),
+                                        )
+                                      : null,
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(20),
+                                    borderSide: BorderSide.none,
+                                  ),
+                                  filled: true,
+                                  fillColor: Colors.grey[50],
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    vertical: 16,
                                   ),
                                 ),
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                          ],
+                        ),
+                      ),
+                      ref
+                          .watch(allOrganizationsProvider)
+                          .when(
+                            data: (organizations) {
+                              final activeRequestsAsync = ref.watch(
+                                activeRequestsProvider,
                               );
-                            }
+                              final activeOrgIds =
+                                  activeRequestsAsync.asData?.value
+                                      .map((req) => req.orgId)
+                                      .toSet() ??
+                                  {};
 
-                            return SliverPadding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                              ),
-                              sliver: SliverList(
-                                delegate: SliverChildBuilderDelegate((
-                                  context,
-                                  index,
-                                ) {
-                                  final org = filteredOrgs[index];
-                                  final isOpen = activeOrgIds.contains(org.id);
+                              // Filter organizations based on search
+                              final filteredOrgs = organizations.where((org) {
+                                if (_searchQuery.isEmpty) return true;
+                                return org.organizationName
+                                        .toLowerCase()
+                                        .contains(_searchQuery) ||
+                                    org.address.toLowerCase().contains(
+                                      _searchQuery,
+                                    );
+                              }).toList();
 
-                                  return OrganizationCard(
-                                    organization: org,
-                                    isOpen: isOpen,
-                                    onTap: () {
-                                      // Move map to organization location if coordinates exist
-                                      if (org.latitude != null &&
-                                          org.longitude != null) {
-                                        _mapController.move(
-                                          LatLng(org.latitude!, org.longitude!),
-                                          15.0,
-                                        );
-                                      }
-                                    },
-                                  );
-                                }, childCount: filteredOrgs.length),
+                              // Sort: Open first, then closed
+                              filteredOrgs.sort((a, b) {
+                                final aOpen = activeOrgIds.contains(a.id);
+                                final bOpen = activeOrgIds.contains(b.id);
+                                if (aOpen && !bOpen) return -1;
+                                if (!aOpen && bOpen) return 1;
+                                return 0;
+                              });
+
+                              if (filteredOrgs.isEmpty) {
+                                return SliverToBoxAdapter(
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(24.0),
+                                    child: Center(
+                                      child: Column(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          Icon(
+                                            Icons.search_off,
+                                            size: 64,
+                                            color: Colors.grey[400],
+                                          ),
+                                          const SizedBox(height: 16),
+                                          Text(
+                                            'No organizations found',
+                                            style: GoogleFonts.outfit(
+                                              fontSize: 16,
+                                              color: Colors.grey[600],
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              }
+
+                              return SliverPadding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                ),
+                                sliver: SliverList(
+                                  delegate: SliverChildBuilderDelegate((
+                                    context,
+                                    index,
+                                  ) {
+                                    final org = filteredOrgs[index];
+                                    final isOpen = activeOrgIds.contains(
+                                      org.id,
+                                    );
+
+                                    return OrganizationCard(
+                                      organization: org,
+                                      isOpen: isOpen,
+                                      onTap: () {
+                                        // Move map to organization location if coordinates exist
+                                        if (org.latitude != null &&
+                                            org.longitude != null) {
+                                          _mapController.move(
+                                            LatLng(
+                                              org.latitude!,
+                                              org.longitude!,
+                                            ),
+                                            15.0,
+                                          );
+                                        }
+                                      },
+                                    );
+                                  }, childCount: filteredOrgs.length),
+                                ),
+                              );
+                            },
+                            error: (err, stack) => SliverToBoxAdapter(
+                              child: Center(
+                                child: Text(
+                                  'Error loading organizations: $err',
+                                ),
                               ),
-                            );
-                          },
-                          error: (err, stack) => SliverToBoxAdapter(
-                            child: Center(
-                              child: Text('Error loading organizations: $err'),
+                            ),
+                            loading: () => const SliverToBoxAdapter(
+                              child: Center(child: CircularProgressIndicator()),
                             ),
                           ),
-                          loading: () => const SliverToBoxAdapter(
-                            child: Center(child: CircularProgressIndicator()),
-                          ),
-                        ),
-                  ],
-                ),
-              );
-            },
+                    ],
+                  ),
+                );
+              },
+            ),
           ),
 
-          // Recenter Button
+          // Premium Recenter Button
           Positioned(
-            bottom: 100,
-            right: 16,
-            child: FloatingActionButton(
-              heroTag: 'recenter',
-              mini: true,
-              backgroundColor: Colors.white,
-              onPressed: _moveToUser,
-              child: const Icon(Icons.my_location, color: Colors.black87),
+            bottom: (_sheetExtent * MediaQuery.of(context).size.height) + 20,
+            right: 20,
+            child: GestureDetector(
+              onTap: _locateMe,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.9),
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.12),
+                      blurRadius: 16,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                  border: Border.all(
+                    color: Colors.white.withOpacity(0.5),
+                    width: 1.5,
+                  ),
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(28),
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+                    child: Center(
+                      child: _isLocating
+                          ? SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2.5,
+                                color: Theme.of(context).primaryColor,
+                              ),
+                            )
+                          : Icon(
+                              Icons.my_location_rounded,
+                              color: Theme.of(context).primaryColor,
+                              size: 26,
+                            ),
+                    ),
+                  ),
+                ),
+              ),
             ),
           ),
         ],

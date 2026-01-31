@@ -6,6 +6,7 @@ import '../../data/repositories/auth_repository.dart';
 import '../../data/repositories/rider_repository.dart';
 import '../../domain/models/rider_profile.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class RiderRegistrationScreen extends ConsumerStatefulWidget {
   const RiderRegistrationScreen({super.key});
@@ -113,7 +114,12 @@ class _RiderRegistrationScreenState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Rider Registration')),
+      appBar: AppBar(
+        title: Text(
+          'Rider Registration',
+          style: GoogleFonts.outfit(fontWeight: FontWeight.w600),
+        ),
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24.0),
         child: Form(

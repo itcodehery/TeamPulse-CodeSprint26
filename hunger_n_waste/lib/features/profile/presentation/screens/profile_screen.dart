@@ -68,7 +68,7 @@ class ProfileScreen extends ConsumerWidget {
             ),
             Text(
               user.userType.name.toUpperCase(),
-              style: GoogleFonts.roboto(
+              style: GoogleFonts.outfit(
                 fontSize: 14,
                 color: Colors.grey[600],
                 fontWeight: FontWeight.w500,
@@ -198,14 +198,14 @@ class ProfileScreen extends ConsumerWidget {
             children: [
               Text(
                 label,
-                style: GoogleFonts.roboto(
+                style: GoogleFonts.outfit(
                   fontSize: 12,
                   color: Colors.grey[500],
                 ),
               ),
               Text(
                 value,
-                style: GoogleFonts.roboto(fontSize: 14, color: Colors.black87),
+                style: GoogleFonts.outfit(fontSize: 14, color: Colors.black87),
               ),
             ],
           ),
