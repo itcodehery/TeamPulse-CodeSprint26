@@ -3,7 +3,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:uuid/uuid.dart';
 import '../../domain/models/food_request.dart';
-import '../../../auth/domain/models/rider_profile.dart';
 
 final foodRequestRepositoryProvider = Provider<FoodRequestRepository>((ref) {
   return FoodRequestRepository(Supabase.instance.client);
@@ -157,79 +156,43 @@ class FoodRequestRepository {
     required String deliveryType, // 'self' or 'service'
     LatLng? pickupLocation, // Optional, only needed for delivery service
   }) async {
-    String? assignedRiderId;
     String status;
 
-    // Only assign rider for delivery service
+    // Only assign rider for delivery service (Previous Auto-Assign Logic Removed for Manual Acceptance)
     if (deliveryType == 'service') {
       if (pickupLocation == null) {
         throw Exception('Pickup location required for delivery service');
       }
 
-      // 2. Fetch all Available Riders
-      final availableRidersData = await _client
-          .from('rider_profiles')
-          .select()
-          .eq('is_available', true);
-
-      final riders = (availableRidersData as List)
-          .map((json) => RiderProfile.fromJson(json))
-          .toList();
-
-      if (riders.isNotEmpty) {
-        // 3. Find Request Location (Use Pickup Location)
-        final requestLoc = pickupLocation;
-        const distance = Distance();
-
-        // 4. Separate riders with and without location data
-        final ridersWithLocation = riders
-            .where(
-              (r) => r.currentLatitude != null && r.currentLongitude != null,
-            )
-            .toList();
-
-        if (ridersWithLocation.isNotEmpty) {
-          // 5. Sort by Distance (only those with location)
-          ridersWithLocation.sort((a, b) {
-            final locA = LatLng(a.currentLatitude!, a.currentLongitude!);
-            final locB = LatLng(b.currentLatitude!, b.currentLongitude!);
-
-            final distA = distance.as(LengthUnit.Meter, requestLoc, locA);
-            final distB = distance.as(LengthUnit.Meter, requestLoc, locB);
-
-            return distA.compareTo(distB);
-          });
-
-          // 6. Pick the closest one
-          assignedRiderId = ridersWithLocation.first.id;
-        } else {
-          // 7. Fallback: No riders have location data, assign first available
-          assignedRiderId = riders.first.id;
-        }
-      }
-
-      status = 'pending_pickup';
+      // Manual Acceptance Flow: Set to 'active' so it appears in Available Orders
+      status = 'active';
+      // assignedRiderId remains null
     } else {
       // Self-delivery: no rider needed
       status = 'self_delivery';
     }
 
     // Update Request Status & Assign Rider (if applicable)
-    await _client
-        .from('food_requests')
-        .update({
-          'status': status,
-          'donor_id': donorId,
-          if (assignedRiderId != null) 'rider_id': assignedRiderId,
-        })
-        .eq('id', requestId);
+    final Map<String, dynamic> updateData = {
+      'status': status,
+      'donor_id': donorId,
+    };
+
+    if (pickupLocation != null) {
+      updateData['latitude'] = pickupLocation.latitude;
+      updateData['longitude'] = pickupLocation.longitude;
+    }
+
+    await _client.from('food_requests').update(updateData).eq('id', requestId);
 
     // Optional: Set assigned rider to unavailable
+    /* 
     if (assignedRiderId != null) {
-      // await _client.from('rider_profiles').update({
-      //   'is_available': false,
-      // }).eq('id', assignedRiderId);
+      await _client.from('rider_profiles').update({
+        'is_available': false,
+      }).eq('id', assignedRiderId);
     }
+    */
   }
 
   Future<void> updateRequestStatus({

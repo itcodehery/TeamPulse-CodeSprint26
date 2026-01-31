@@ -33,11 +33,19 @@ class RiderHistoryScreen extends ConsumerWidget {
     final deliveriesAsync = ref.watch(riderCompletedDeliveriesProvider);
 
     return Scaffold(
+      backgroundColor: const Color(0xFFF9F9F9),
       appBar: AppBar(
         title: Text(
           'Delivery History',
-          style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+          style: GoogleFonts.outfit(
+            fontWeight: FontWeight.bold,
+            fontSize: 24,
+            color: Colors.black87,
+          ),
         ),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: Colors.black87),
       ),
       body: deliveriesAsync.when(
         data: (deliveries) {
@@ -46,11 +54,15 @@ class RiderHistoryScreen extends ConsumerWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.history, size: 64, color: Colors.grey[400]),
+                  Icon(
+                    Icons.history_rounded,
+                    size: 64,
+                    color: Colors.grey[300],
+                  ),
                   const SizedBox(height: 16),
                   Text(
                     'No completed deliveries yet',
-                    style: GoogleFonts.poppins(
+                    style: GoogleFonts.outfit(
                       color: Colors.grey[600],
                       fontSize: 16,
                     ),
@@ -58,8 +70,8 @@ class RiderHistoryScreen extends ConsumerWidget {
                   const SizedBox(height: 8),
                   Text(
                     'Your delivery history will appear here',
-                    style: GoogleFonts.poppins(
-                      color: Colors.grey[500],
+                    style: GoogleFonts.outfit(
+                      color: Colors.grey[400],
                       fontSize: 14,
                     ),
                   ),
@@ -69,53 +81,65 @@ class RiderHistoryScreen extends ConsumerWidget {
           }
 
           return ListView.builder(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
             itemCount: deliveries.length,
             itemBuilder: (context, index) {
               final delivery = deliveries[index];
-              return Card(
-                margin: const EdgeInsets.only(bottom: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+              return Container(
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.03),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
                 child: Padding(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(20),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(
-                            delivery['food_type'] ?? 'Food',
-                            style: GoogleFonts.poppins(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
+                          Expanded(
+                            child: Text(
+                              delivery['food_type'] ?? 'Food',
+                              style: GoogleFonts.outfit(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black87,
+                              ),
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                           Container(
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
+                              horizontal: 10,
+                              vertical: 6,
                             ),
                             decoration: BoxDecoration(
-                              color: Colors.green.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(8),
+                              color: const Color(0xFFE8F5E9),
+                              borderRadius: BorderRadius.circular(100),
                             ),
                             child: Row(
                               children: [
-                                Icon(
-                                  Icons.check_circle,
+                                const Icon(
+                                  Icons.check_circle_rounded,
                                   size: 14,
-                                  color: Colors.green[700],
+                                  color: Color(0xFF2E7D32),
                                 ),
                                 const SizedBox(width: 4),
                                 Text(
                                   'COMPLETED',
-                                  style: TextStyle(
-                                    color: Colors.green[700],
-                                    fontSize: 12,
+                                  style: GoogleFonts.outfit(
+                                    fontSize: 10,
                                     fontWeight: FontWeight.bold,
+                                    color: const Color(0xFF2E7D32),
                                   ),
                                 ),
                               ],
@@ -123,24 +147,42 @@ class RiderHistoryScreen extends ConsumerWidget {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 16),
                       Row(
                         children: [
-                          const Icon(
-                            Icons.people_outline,
+                          Icon(
+                            Icons.people_outline_rounded,
                             size: 16,
-                            color: Colors.grey,
+                            color: Colors.grey[400],
                           ),
-                          const SizedBox(width: 4),
-                          Text('${delivery['quantity']} people fed'),
+                          const SizedBox(width: 8),
+                          Text(
+                            '${delivery['quantity'] ?? 0} people fed',
+                            style: GoogleFonts.outfit(
+                              fontSize: 14,
+                              color: Colors.grey[600],
+                            ),
+                          ),
                         ],
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 16),
+                      const Divider(height: 1),
+                      const SizedBox(height: 12),
                       Text(
-                        DateFormat.yMMMd().add_jm().format(
-                          DateTime.parse(delivery['created_at']),
+                        delivery['created_at'] != null
+                            ? DateFormat.yMMMd()
+                                  .add_jm()
+                                  .format(
+                                    DateTime.parse(delivery['created_at']),
+                                  )
+                                  .toUpperCase()
+                            : 'DATE UNKNOWN',
+                        style: GoogleFonts.outfit(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.grey[300],
+                          letterSpacing: 0.5,
                         ),
-                        style: TextStyle(color: Colors.grey[400], fontSize: 12),
                       ),
                     ],
                   ),

@@ -16,170 +16,182 @@ class OrganizationCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Greyscale matrix
-    const ColorFilter greyscaleFilter = ColorFilter.matrix(<double>[
-      0.2126,
-      0.7152,
-      0.0722,
-      0,
-      0,
-      0.2126,
-      0.7152,
-      0.0722,
-      0,
-      0,
-      0.2126,
-      0.7152,
-      0.0722,
-      0,
-      0,
-      0,
-      0,
-      0,
-      1,
-      0,
-    ]);
+    final typeColor = _getColorForType(organization.organizationType);
+    final typeIcon = _getIconForType(organization.organizationType);
 
-    Widget cardContent = Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      elevation: isOpen ? 2 : 0, // Remove elevation if closed
-      color: isOpen
-          ? Colors.white
-          : Colors.grey[100], // Dim background if closed
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: InkWell(
-        onTap: isOpen ? onTap : null, // Disable tap if closed
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Row(
-            children: [
-              // Organization Icon/Image
-              Container(
-                width: 60,
-                height: 60,
-                decoration: BoxDecoration(
-                  color: _getColorForType(organization.organizationType),
-                  borderRadius: BorderRadius.circular(8),
+    Widget cardContent = Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: isOpen ? Colors.white : Colors.grey[50],
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: isOpen
+            ? [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.04),
+                  blurRadius: 16,
+                  offset: const Offset(0, 8),
                 ),
-                child: Icon(
-                  _getIconForType(organization.organizationType),
-                  color: Colors.white,
-                  size: 30,
+              ]
+            : null,
+        border: Border.all(
+          color: isOpen ? Colors.grey[100]! : Colors.grey[200]!,
+        ),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: isOpen ? onTap : null,
+          borderRadius: BorderRadius.circular(24),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                // Icon/Image Section
+                Container(
+                  width: 64,
+                  height: 64,
+                  decoration: BoxDecoration(
+                    color: typeColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                  child: Icon(typeIcon, color: typeColor, size: 28),
                 ),
-              ),
-              const SizedBox(width: 12),
-              // Organization Details
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            organization.organizationName,
-                            style: GoogleFonts.poppins(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.black87,
+                const SizedBox(width: 16),
+
+                // Content Section
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              organization.organizationName,
+                              style: GoogleFonts.outfit(
+                                fontSize: 17,
+                                fontWeight: FontWeight.bold,
+                                color: isOpen
+                                    ? Colors.black87
+                                    : Colors.grey[500],
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
                           ),
-                        ),
-                        if (organization.isVerified)
-                          const Icon(
-                            Icons.verified,
-                            color: Colors.blue,
-                            size: 18,
-                          ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      organization.organizationType.name.toUpperCase(),
-                      style: GoogleFonts.roboto(
-                        fontSize: 12,
-                        color: _getColorForType(organization.organizationType),
-                        fontWeight: FontWeight.w500,
+                          if (organization.isVerified && isOpen)
+                            Padding(
+                              padding: const EdgeInsets.only(left: 4),
+                              child: Icon(
+                                Icons.verified_rounded,
+                                color: Theme.of(context).primaryColor,
+                                size: 16,
+                              ),
+                            ),
+                        ],
                       ),
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.location_on_outlined,
-                          size: 14,
-                          color: Colors.grey[600],
+                      const SizedBox(height: 4),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 2,
                         ),
-                        const SizedBox(width: 4),
-                        Expanded(
-                          child: Text(
-                            organization.address,
-                            style: GoogleFonts.roboto(
-                              fontSize: 12,
-                              color: Colors.grey[600],
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                        decoration: BoxDecoration(
+                          color: typeColor.withOpacity(0.08),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          organization.organizationType.name.toUpperCase(),
+                          style: GoogleFonts.outfit(
+                            fontSize: 10,
+                            color: typeColor,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0.5,
                           ),
                         ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              if (isOpen)
-                const Icon(Icons.chevron_right, color: Colors.grey)
-              else
-                Text(
-                  'CLOSED',
-                  style: GoogleFonts.roboto(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.grey,
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.location_on_outlined,
+                            size: 14,
+                            color: Colors.grey[400],
+                          ),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              organization.address,
+                              style: GoogleFonts.outfit(
+                                fontSize: 12,
+                                color: Colors.grey[500],
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
-            ],
+
+                // Action/Status Section
+                if (isOpen)
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[50],
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.arrow_forward_ios_rounded,
+                      size: 12,
+                      color: Colors.grey[400],
+                    ),
+                  )
+                else
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[200],
+                      borderRadius: BorderRadius.circular(100),
+                    ),
+                    child: Text(
+                      'CLOSED',
+                      style: GoogleFonts.outfit(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey[500],
+                      ),
+                    ),
+                  ),
+              ],
+            ),
           ),
         ),
       ),
     );
 
-    if (!isOpen) {
-      return ColorFiltered(
-        colorFilter: greyscaleFilter,
-        child: Opacity(opacity: 0.7, child: cardContent),
-      );
-    }
-
     return cardContent;
   }
 
   Color _getColorForType(dynamic organizationType) {
-    switch (organizationType.toString()) {
-      case 'OrganizationType.ngo':
-        return Colors.green;
-      case 'OrganizationType.orphanage':
-        return Colors.orange;
-      case 'OrganizationType.oldAgeHome':
-        return Colors.purple;
-      default:
-        return Colors.blue;
-    }
+    final typeStr = organizationType.toString().toLowerCase();
+    if (typeStr.contains('ngo')) return const Color(0xFF2E7D32);
+    if (typeStr.contains('orphanage')) return const Color(0xFFE65100);
+    if (typeStr.contains('oldagehome')) return const Color(0xFF6A1B9A);
+    return const Color(0xFF1565C0);
   }
 
   IconData _getIconForType(dynamic organizationType) {
-    switch (organizationType.toString()) {
-      case 'OrganizationType.ngo':
-        return Icons.volunteer_activism;
-      case 'OrganizationType.orphanage':
-        return Icons.child_care;
-      case 'OrganizationType.oldAgeHome':
-        return Icons.elderly;
-      default:
-        return Icons.business;
-    }
+    final typeStr = organizationType.toString().toLowerCase();
+    if (typeStr.contains('ngo')) return Icons.volunteer_activism_rounded;
+    if (typeStr.contains('orphanage')) return Icons.child_care_rounded;
+    if (typeStr.contains('oldagehome')) return Icons.elderly_rounded;
+    return Icons.business_rounded;
   }
 }
